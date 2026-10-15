@@ -195,7 +195,9 @@ function unidadDe(p){
 }
 
 /* ===== Estado ===== */
-let cfg = store.get('pp.cfg', {url:'', clave:'', local:'Buenas y Santas', dispositivo:'Tablet'});
+const URL_HOJA = 'https://script.google.com/macros/s/AKfycbyMwaUKlKn46HqJtZ8vmceOulgwoXaF-qGCzHZp4w32uV2Spvk-4q-Cf2qY6u7B0bur/exec';
+let cfg = Object.assign({url:URL_HOJA, clave:'', local:'Buenas y Santas', dispositivo:'Tablet'}, store.get('pp.cfg', {}));
+if (!cfg.url) cfg.url = URL_HOJA;
 let cat = store.get('pp.cat', null);
 let drafts = store.get('pp.drafts', {});
 let cola = store.get('pp.cola', []);
@@ -286,12 +288,10 @@ function renderInicio(){
   $('#bottom').hidden = true;
   if (!cat){
     $('#main').innerHTML = `<div class="welcome">
-      <h2>Conecta la app con tu hoja</h2>
+      <h2>Conectando con tu hoja…</h2>
       <p>La lista de proveedores y productos sale de tu Google Sheet. Hazlo una sola vez:</p>
-      <ol><li>En la hoja, pega el código de Apps Script y ejecuta <b>configurar</b>.</li>
-      <li>Implementa como aplicación web y copia la URL que termina en <b>/exec</b>.</li>
-      <li>Pulsa el botón de abajo y pega la URL y la clave.</li></ol>
-      <div class="actions"><button class="btn primary" data-act="ajustes">Conectar con la hoja</button>
+      <p>No se ha podido leer la hoja. Comprueba que hay internet y que en Apps Script has ejecutado <b>configurar</b> y publicado una <b>Nueva versión</b>.</p>
+      <div class="actions"><button class="btn primary" data-act="reintentar">Reintentar</button>
       <button class="btn" data-act="demo" id="demoBtn" hidden>Probar con datos de ejemplo</button></div></div>`;
     fetch('catalogo.json').then(r => r.ok && ($('#demoBtn') && ($('#demoBtn').hidden = false))).catch(()=>{});
     return;
@@ -477,7 +477,6 @@ function abrirAjustes(){
     <h2 id="at">Ajustes</h2>
     <p class="muted">Estos datos se guardan solo en esta tablet.</p>
     <div class="field"><label for="f-url">URL de la hoja (termina en /exec)</label><input id="f-url" type="url" inputmode="url" value="${esc(cfg.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
-    <div class="field"><label for="f-clave">Clave</label><input id="f-clave" type="text" value="${esc(cfg.clave)}" autocomplete="off"></div>
     <div class="field"><label for="f-local">Nombre del local (sale en el mensaje)</label><input id="f-local" type="text" value="${esc(cfg.local)}"></div>
     <div class="field"><label for="f-disp">Nombre de este dispositivo</label><input id="f-disp" type="text" value="${esc(cfg.dispositivo)}"></div>
     <p class="muted" style="margin-top:12px">${cat && cat.actualizado ? 'Productos actualizados a las '+horaCorta(cat.actualizado)+'. ' : ''}${cola.length ? cola.length+' pedido(s) esperando a guardarse en la hoja.' : ''}</p>
@@ -486,7 +485,7 @@ function abrirAjustes(){
   $('#modal .dlg').addEventListener('click', e => {
     const b = e.target.closest('button[data-a]'); if (!b) return;
     if (b.dataset.a === 'guardar'){
-      cfg = {url:$('#f-url').value.trim(), clave:$('#f-clave').value.trim(), local:$('#f-local').value.trim(), dispositivo:$('#f-disp').value.trim()};
+      cfg = {url:$('#f-url').value.trim(), clave:cfg.clave||'', local:$('#f-local').value.trim(), dispositivo:$('#f-disp').value.trim()};
       store.set('pp.cfg', cfg); cerrar(); cargarCatalogo(true);
     } else if (b.dataset.a === 'refrescar'){ cerrar(); cargarCatalogo(true); }
     else cerrar();
@@ -499,6 +498,7 @@ document.addEventListener('click', e => {
   const a = b.dataset.act, id = b.dataset.id;
   if (a === 'cerrar'){ if (e.target === b) cerrar(); return; }
   if (a === 'ajustes') return abrirAjustes();
+  if (a === 'reintentar') return cargarCatalogo(true);
   if (a === 'volver'){ ui.vista = 'inicio'; ui.buscar=''; ui.solo=false; render(); window.scrollTo(0,0); return; }
   if (a === 'dia'){ ui.dia = b.dataset.dia; render(); return; }
   if (a === 'abrir'){ ui.vista = 'prov'; ui.prov = b.dataset.prov; ui.entrega=''; ui.buscar=''; ui.solo=false; render(); window.scrollTo(0,0); return; }
