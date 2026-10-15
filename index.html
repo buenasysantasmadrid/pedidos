@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pedidos Buenas y Santas</title>
+<meta name="theme-color" content="#1e6b4e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pedidos">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: cajas de mercado. Inicio = rejilla de proveedores del día; proveedor = lista con contadores grandes y barra de envío fija. */
+:root{
+  --bg:#eaefe9; --surface:#f8faf7; --ink:#16241d; --muted:#5b6b62; --line:#cfd9d1;
+  --basil:#1e6b4e; --basil-ink:#ffffff; --leaf:#d3eadb; --leaf-line:#8cc3a3;
+  --tomato:#b8432b; --tomato-bg:#f8e1da; --sun:#f3c94f;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r-sm:8px; --r-md:14px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#101814; --surface:#18231d; --ink:#e4ede7; --muted:#9db0a5; --line:#2b3a32;
+  --basil:#4fb585; --basil-ink:#0d1a13; --leaf:#1d3a2b; --leaf-line:#3f7a5b;
+  --tomato:#ec7f63; --tomato-bg:#3a1f18; --sun:#e4b93c; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 var(--body);-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+[hidden]{display:none!important}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1280px;margin:0 auto}
+
+/* Barra superior */
+.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:64px;padding-block:8px}
+.brand{font:700 30px/1 var(--display);letter-spacing:.01em;margin:0}
+.brand small{display:block;font:400 14px/1.2 var(--body);color:var(--muted);letter-spacing:0;margin-top:3px}
+.spacer{flex:1}
+.iconbtn{min-width:52px;height:52px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;font-weight:700}
+.iconbtn svg{width:24px;height:24px}
+.sync{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.sync i{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync.ok i{background:var(--basil)} .sync.warn i{background:var(--sun)} .sync.err i{background:var(--tomato)}
+
+/* Días */
+.days{display:flex;gap:8px;padding-block:14px;overflow-x:auto}
+.day{flex:1 0 auto;min-width:64px;height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font:600 22px/1 var(--display);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.day small{font:400 12px var(--body);color:var(--muted)}
+.day[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.day[aria-pressed="true"] small{color:inherit;opacity:.75}
+
+h2.sec{font:600 24px/1.1 var(--display);margin:18px 0 10px}
+h2.sec span{font:400 15px var(--body);color:var(--muted);margin-left:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.grid.small{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.tile{position:relative;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 16px 14px;min-height:128px;display:flex;flex-direction:column;gap:6px}
+.grid.small .tile{min-height:96px;padding:12px 14px}
+.tile .name{font:700 28px/1 var(--display);overflow-wrap:anywhere}
+.grid.small .tile .name{font-size:23px}
+.tile .meta{font-size:14px;color:var(--muted)}
+.tile .state{margin-top:auto;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
+.tile.has{border-color:var(--leaf-line);background:var(--leaf)}
+.tile.has .state{color:var(--basil)}
+.tile.sent .state{color:var(--basil)}
+.tile.sent::after{content:"";position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:var(--basil) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/16px no-repeat}
+
+/* Proveedor */
+.provhead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 18px;padding-block:14px 6px}
+.provhead h1{font:700 44px/0.95 var(--display);margin:0;overflow-wrap:anywhere}
+.provhead .contact{color:var(--muted);font-size:15px;user-select:text}
+.note{background:var(--tomato-bg);color:var(--ink);border-left:5px solid var(--tomato);border-radius:var(--r-sm);padding:10px 14px;margin-block:8px;font-size:16px}
+.seg{display:flex;gap:8px;margin-block:10px;flex-wrap:wrap}
+.seg button{height:54px;padding:0 20px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font:600 22px var(--display)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg .lbl{align-self:center;color:var(--muted);font-size:15px}
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-block:8px 12px;position:sticky;top:calc(81px + env(safe-area-inset-top,0px));z-index:10;background:var(--bg)}
+.search{flex:1 1 220px;height:52px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);padding:0 14px;min-width:0}
+.btn{height:52px;padding:0 16px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font-weight:700;white-space:nowrap}
+.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.primary{background:var(--basil);color:var(--basil-ink);border-color:var(--basil)}
+.btn.danger{color:var(--tomato)}
+.list{display:grid;grid-template-columns:1fr;gap:8px;padding-bottom:120px}
+@media (min-width:900px){.list{grid-template-columns:1fr 1fr}}
+.list h3{grid-column:1/-1;font:600 22px var(--display);margin:12px 0 0;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px 8px 8px 14px;min-height:78px}
+.row.on{background:var(--leaf);border-color:var(--leaf-line)}
+.row .txt{flex:1;min-width:0}
+.row .pn{font-weight:700;font-size:18px;line-height:1.2;overflow-wrap:anywhere}
+.row .hint{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:14px;color:var(--muted)}
+.chip{border:1px dashed var(--muted);background:transparent;border-radius:999px;padding:3px 10px;font-size:14px;color:var(--ink)}
+.stepper{display:flex;align-items:center;gap:4px;flex:none}
+.stepper button{width:58px;height:58px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:600 32px/1 var(--display);display:flex;align-items:center;justify-content:center}
+.stepper .plus{background:var(--basil);color:var(--basil-ink);border-color:var(--basil)}
+.stepper .q{width:74px;font-size:34px;background:transparent;border-color:transparent;font-variant-numeric:tabular-nums}
+.row:not(.on) .q{color:var(--muted)}
+.empty{padding:40px 0;color:var(--muted);text-align:center}
+
+/* Barra inferior */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--ink);color:var(--bg);padding-bottom:env(safe-area-inset-bottom,0px)}
+.bottom .wrap{display:flex;align-items:center;gap:14px;min-height:80px;padding-block:10px}
+.bottom .sum{font:600 26px/1 var(--display)}
+.bottom .sum small{display:block;font:400 14px var(--body);opacity:.75;margin-top:4px}
+.bottom .btn{height:58px;font-size:18px;padding:0 24px;border:0}
+.bottom .btn.primary{background:var(--basil);color:var(--basil-ink)}
+@media (prefers-color-scheme:dark){.bottom .btn.primary{background:var(--bg);color:var(--ink)}}
+
+/* Ventanas */
+.scrim{position:fixed;inset:0;background:rgb(8 14 11 / .55);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.scrim{align-items:center}}
+.dlg{background:var(--surface);color:var(--ink);border-radius:18px;width:100%;max-width:560px;max-height:92%;overflow:auto;padding:20px}
+.dlg h2{font:700 32px/1 var(--display);margin:0 0 6px}
+.dlg p{margin:6px 0}
+.dlg .muted{color:var(--muted);font-size:15px}
+.keyout{font:700 64px/1 var(--display);text-align:center;padding:10px 0 4px;font-variant-numeric:tabular-nums}
+.keyunit{text-align:center;color:var(--muted);margin-bottom:12px;min-height:1.4em}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.keys button{height:66px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:600 30px var(--display)}
+.keys .frac{background:var(--leaf);border-color:var(--leaf-line)}
+.keys .wide{grid-column:span 2}
+.keys .ok{background:var(--basil);color:var(--basil-ink);border-color:var(--basil);font-size:26px}
+.field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.field label{font-weight:700}
+.field input,.field textarea{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);padding:12px 14px;min-height:52px;width:100%}
+.field textarea{min-height:240px;font-size:16px;line-height:1.45;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.actions .btn{flex:1 1 180px;height:58px}
+.copybox{user-select:all;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;font-size:15px;overflow-wrap:anywhere}
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:14px 22px;border-radius:12px;z-index:60;font-weight:700;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgb(0 0 0 / .25)}
+.welcome{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;margin-top:16px;max-width:680px}
+.welcome h2{font:700 34px/1 var(--display);margin:0 0 8px}
+.welcome ol{padding-left:22px;margin:8px 0}
+@media (max-width:520px){
+  .stepper button{width:48px;height:52px}.stepper .q{width:54px;font-size:28px}
+  .provhead h1{font-size:36px}.bottom .btn{padding:0 16px}
+  .iconbtn span,.sync span{display:none}
+}
+@media (prefers-reduced-motion:no-preference){.row,.tile{transition:background-color .15s,border-color .15s}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap" id="topbar"></div></header>
+<main class="wrap" id="main"></main>
+<div class="bottom" id="bottom" hidden><div class="wrap" id="bottombar"></div></div>
+<div id="modal"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+'use strict';
+/* ===== Utilidades ===== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+const DIAS = ['L','M','X','J','V','S'];
+const NOMBRE_DIA = {L:'lunes',M:'martes',X:'miércoles',J:'jueves',V:'viernes',S:'sábado',D:'domingo'};
+const COD_JS = ['D','L','M','X','J','V','S'];
+const hoyISO = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const hoyCod = () => { const c = COD_JS[new Date().getDay()]; return c === 'D' ? 'L' : c; };
+const fechaCorta = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+const horaCorta = iso => { const d = new Date(iso); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+function proximaFecha(cod){ const d = new Date(); for (let i=1;i<=7;i++){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()+i); if (COD_JS[x.getDay()] === cod) return x; } return d; }
+const lista = s => String(s||'').toUpperCase().split(/[\s,;\/]+/).map(x=>x.trim()).filter(x => DIAS.includes(x));
+const sinTildes = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+
+function fmtQ(n){
+  if (!n) return '0';
+  const e = Math.floor(n + 1e-9), f = Math.round((n - e) * 100) / 100;
+  const fr = {0.25:'¼',0.5:'½',0.75:'¾'}[f];
+  if (fr) return (e ? e : '') + fr;
+  return f ? String(n).replace('.', ',') : String(e);
+}
+function parseHabitual(t){
+  t = String(t||'').trim();
+  if (!t || /men[uú]/i.test(t)) return 0;
+  let m = t.match(/^(\d+)\s*\/\s*(\d+)/); if (m) return +m[1] / +m[2];
+  m = t.match(/^(\d+)[.,](\d+)/); if (m) return parseFloat(m[1]+'.'+m[2]);
+  m = t.match(/^(\d+)/); if (m) return +m[1];
+  return 0;
+}
+function unidadDe(p){
+  if (p.unidad && !/^pack/i.test(p.unidad)) return p.unidad;
+  const t = String(p.habitual||'').replace(/^[\d\s.,\/]+/, '').replace(/c\/\s*men[uú]/i,'').replace(/^x$/i,'').trim();
+  return /^[a-záéíóúñ.]+( [a-záéíóúñ.]+)?$/i.test(t) && !/ver/i.test(t) ? t.replace(/\.$/,'') : '';
+}
+
+/* ===== Estado ===== */
+let cfg = store.get('pp.cfg', {url:'', clave:'', local:'Buenas y Santas', dispositivo:'Tablet'});
+let cat = store.get('pp.cat', null);
+let drafts = store.get('pp.drafts', {});
+let cola = store.get('pp.cola', []);
+let ui = {vista:'inicio', dia:hoyCod(), prov:null, entrega:'', buscar:'', solo:false};
+let syncState = {cls:'', txt:''};
+
+(function limpiar(){
+  const lim = new Date(); lim.setDate(lim.getDate()-10);
+  const corte = lim.toISOString().slice(0,10);
+  for (const k of Object.keys(drafts)) if (k.slice(0,10) < corte) delete drafts[k];
+  store.set('pp.drafts', drafts);
+})();
+
+const provs = () => (cat && cat.proveedores) || [];
+const prodsDe = nombre => ((cat && cat.productos) || []).filter(p => p.proveedor === nombre);
+const provPorNombre = n => provs().find(p => p.proveedor === n);
+const entregasDe = p => lista(p.entregas);
+const dkey = (prov, ent) => hoyISO()+'|'+prov+'|'+(ent||'');
+const draft = (prov, ent) => drafts[dkey(prov, ent)] || (drafts[dkey(prov, ent)] = {q:{}, enviado:null});
+const guardar = () => store.set('pp.drafts', drafts);
+function lineas(prov, ent){ const d = drafts[dkey(prov, ent)]; return d ? Object.values(d.q).filter(v => v > 0).length : 0; }
+function totalLineas(p){ const es = entregasDe(p); return (es.length ? es : ['']).reduce((s,e) => s + lineas(p.proveedor, e), 0); }
+function enviado(p){ const es = entregasDe(p); let t = null; for (const e of (es.length ? es : [''])){ const d = drafts[dkey(p.proveedor, e)]; if (d && d.enviado && (!t || d.enviado > t)) t = d.enviado; } return t; }
+
+/* ===== Conexión con la hoja ===== */
+async function llamar(body){
+  const r = await fetch(cfg.url, {method:'POST', body: JSON.stringify(Object.assign({clave: cfg.clave}, body))});
+  if (!r.ok) throw new Error('La hoja respondió con error '+r.status);
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Error de la hoja');
+  return j;
+}
+function setSync(cls, txt){ syncState = {cls, txt}; const el = $('#sync'); if (el){ el.className = 'sync '+cls; el.lastElementChild.textContent = txt; } }
+async function cargarCatalogo(aviso){
+  if (!cfg.url){ setSync('warn','Sin conectar'); return; }
+  setSync('', 'Actualizando…');
+  try {
+    const j = await llamar({accion:'catalogo'});
+    cat = {proveedores:j.proveedores, productos:j.productos, ultimos:j.ultimos||{}, actualizado:j.actualizado};
+    store.set('pp.cat', cat);
+    setSync('ok', 'Al día · '+horaCorta(cat.actualizado));
+    if (aviso) toast('Productos actualizados desde la hoja');
+    render();
+  } catch(e){
+    setSync('err', cat ? 'Sin conexión, usando la última copia' : 'No se pudo conectar');
+    if (aviso) toast('No se pudo leer la hoja: '+e.message);
+  }
+  vaciarCola();
+}
+async function vaciarCola(){
+  if (!cfg.url || !cola.length) return;
+  for (const ped of [...cola]){
+    try { await llamar(ped); cola = cola.filter(x => x.pedido !== ped.pedido); store.set('pp.cola', cola); }
+    catch(e){ setSync('warn', cola.length+' pedido(s) pendientes de guardar en la hoja'); return; }
+  }
+}
+window.addEventListener('online', () => vaciarCola());
+
+/* ===== Pintar ===== */
+const ICON_GEAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+const ICON_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+
+function render(){
+  const hoy = new Date();
+  const fecha = NOMBRE_DIA[COD_JS[hoy.getDay()]]+' '+hoy.getDate()+' '+hoy.toLocaleDateString('es-ES',{month:'short'}).replace('.','');
+  const atras = ui.vista === 'prov' ? `<button class="iconbtn" data-act="volver" aria-label="Volver a proveedores">${ICON_BACK}<span>Proveedores</span></button>` : '';
+  $('#topbar').innerHTML = `${atras}
+    <p class="brand">Pedidos<small>${esc(cfg.local||'')} · ${esc(fecha)}</small></p>
+    <span class="spacer"></span>
+    <span id="sync" class="sync ${syncState.cls}"><i></i><span>${esc(syncState.txt)}</span></span>
+    <button class="iconbtn" data-act="ajustes" aria-label="Ajustes">${ICON_GEAR}</button>`;
+  if (ui.vista === 'prov' && provPorNombre(ui.prov)) renderProv(); else { ui.vista = 'inicio'; renderInicio(); }
+}
+
+function tileHTML(p){
+  const n = totalLineas(p), env = enviado(p), es = entregasDe(p);
+  let estado = 'Sin empezar';
+  if (env) estado = 'Enviado a las '+horaCorta(env);
+  else if (n) estado = n+(n === 1 ? ' producto' : ' productos');
+  const meta = [p.contacto, es.length ? 'entrega '+es.map(e => NOMBRE_DIA[e]).join(' y ') : ''].filter(Boolean).join(' · ');
+  return `<button class="tile ${n && !env ? 'has' : ''} ${env ? 'sent' : ''}" data-act="abrir" data-prov="${esc(p.proveedor)}">
+    <span class="name">${esc(p.proveedor)}</span>
+    ${meta ? `<span class="meta">${esc(meta)}</span>` : ''}
+    <span class="state">${esc(estado)}</span></button>`;
+}
+
+function renderInicio(){
+  $('#bottom').hidden = true;
+  if (!cat){
+    $('#main').innerHTML = `<div class="welcome">
+      <h2>Conecta la app con tu hoja</h2>
+      <p>La lista de proveedores y productos sale de tu Google Sheet. Hazlo una sola vez:</p>
+      <ol><li>En la hoja, pega el código de Apps Script y ejecuta <b>configurar</b>.</li>
+      <li>Implementa como aplicación web y copia la URL que termina en <b>/exec</b>.</li>
+      <li>Pulsa el botón de abajo y pega la URL y la clave.</li></ol>
+      <div class="actions"><button class="btn primary" data-act="ajustes">Conectar con la hoja</button>
+      <button class="btn" data-act="demo" id="demoBtn" hidden>Probar con datos de ejemplo</button></div></div>`;
+    fetch('catalogo.json').then(r => r.ok && ($('#demoBtn') && ($('#demoBtn').hidden = false))).catch(()=>{});
+    return;
+  }
+  const dia = ui.dia;
+  const delDia = provs().filter(p => lista(p.dias).includes(dia));
+  const resto = provs().filter(p => !lista(p.dias).includes(dia));
+  const pend = delDia.filter(p => !enviado(p)).length;
+  $('#main').innerHTML = `
+    <nav class="days" aria-label="Día de pedido">${DIAS.map(d => `<button class="day" data-act="dia" data-dia="${d}" aria-pressed="${d===dia}">${d}<small>${d===hoyCod() ? 'hoy' : NOMBRE_DIA[d].slice(0,3)}</small></button>`).join('')}</nav>
+    <h2 class="sec">Toca pedir el ${NOMBRE_DIA[dia]}<span>${delDia.length ? (pend ? pend+' por enviar' : 'todo enviado') : ''}</span></h2>
+    ${delDia.length ? `<div class="grid">${delDia.map(tileHTML).join('')}</div>` : `<p class="empty">Ningún proveedor tiene pedido el ${NOMBRE_DIA[dia]}. Puedes cambiarlo en la pestaña APP_Proveedores de la hoja.</p>`}
+    ${resto.length ? `<h2 class="sec">Resto de proveedores</h2><div class="grid small">${resto.map(tileHTML).join('')}</div>` : ''}
+    <div style="height:40px"></div>`;
+}
+
+function renderProv(){
+  const p = provPorNombre(ui.prov);
+  const es = entregasDe(p);
+  if (es.length && !es.includes(ui.entrega)) ui.entrega = es[0];
+  if (!es.length) ui.entrega = '';
+  const d = draft(p.proveedor, ui.entrega);
+  const ult = (cat.ultimos || {})[p.proveedor+'|'+(ui.entrega ? NOMBRE_DIA[ui.entrega] : '')];
+  const contacto = [p.contacto, p.telefono].filter(Boolean).join(' · ');
+  $('#main').innerHTML = `
+    <div class="provhead"><h1>${esc(p.proveedor)}</h1>${contacto ? `<span class="contact">${esc(contacto)}</span>` : ''}</div>
+    ${p.nota ? `<div class="note">${esc(p.nota)}</div>` : ''}
+    ${es.length > 1 ? `<div class="seg" role="group" aria-label="Día de entrega"><span class="lbl">Entrega</span>${es.map(e => `<button data-act="entrega" data-e="${e}" aria-pressed="${e===ui.entrega}">${NOMBRE_DIA[e][0].toUpperCase()+NOMBRE_DIA[e].slice(1)} ${fechaCorta(proximaFecha(e))}${lineas(p.proveedor,e) ? ' · '+lineas(p.proveedor,e) : ''}</button>`).join('')}</div>` : ''}
+    <div class="tools">
+      <input class="search" id="buscar" type="search" placeholder="Buscar producto" value="${esc(ui.buscar)}" autocomplete="off">
+      <button class="btn" data-act="habituales">Poner habituales</button>
+      <button class="btn" data-act="repetir" ${ult && ult.items.length ? '' : 'disabled'}>Repetir último</button>
+      <button class="btn" data-act="solo" aria-pressed="${ui.solo}">Solo lo pedido</button>
+      <button class="btn danger" data-act="vaciar">Vaciar</button>
+    </div>
+    <div class="list">${listaHTML(p, d)}</div>`;
+  renderBottom();
+}
+
+function listaHTML(p, d){
+  const q = sinTildes(ui.buscar.trim());
+  let items = prodsDe(p.proveedor);
+  if (q) items = items.filter(x => sinTildes(x.producto).includes(q));
+  if (ui.solo) items = items.filter(x => d.q[x.id] > 0);
+  let html = '', sec = null;
+  for (const x of items){
+    if (x.seccion && x.seccion !== sec){ sec = x.seccion; html += `<h3>${esc(sec)}</h3>`; }
+    const v = d.q[x.id] || 0, u = unidadDe(x);
+    const hab = x.habitual ? `<button class="chip" data-act="hab" data-id="${esc(x.id)}" ${parseHabitual(x.habitual) ? '' : 'disabled'}>Habitual: ${esc(x.habitual)}</button>` : '';
+    const pack = /^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : '';
+    html += `<div class="row ${v ? 'on' : ''}" data-id="${esc(x.id)}">
+      <div class="txt"><div class="pn">${esc(x.producto)}</div><div class="hint">${u && !x.habitual ? `<span>${esc(u)}</span>` : ''}${pack}${hab}${x.ref ? `<span>Ref ${esc(x.ref)}</span>` : ''}</div></div>
+      <div class="stepper"><button data-act="menos" data-id="${esc(x.id)}" aria-label="Quitar uno de ${esc(x.producto)}">−</button>
+      <button class="q" data-act="teclado" data-id="${esc(x.id)}" aria-label="Cantidad de ${esc(x.producto)}: ${fmtQ(v)}">${fmtQ(v)}</button>
+      <button class="plus" data-act="mas" data-id="${esc(x.id)}" aria-label="Añadir uno de ${esc(x.producto)}">+</button></div></div>`;
+  }
+  if (!items.length) html = `<p class="empty">${ui.solo ? 'Todavía no has puesto nada en este pedido.' : q ? 'Ningún producto coincide con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos. Añádelos en la pestaña APP_Productos.'}</p>`;
+  return html;
+}
+
+function renderBottom(){
+  const p = provPorNombre(ui.prov);
+  const es = entregasDe(p);
+  const n = totalLineas(p), env = enviado(p);
+  const sub = env ? 'Enviado a las '+horaCorta(env)+(n ? ' · puedes reenviarlo' : '') : es.length > 1 ? es.map(e => NOMBRE_DIA[e]+': '+lineas(p.proveedor,e)).join(' · ') : 'Pedido de hoy';
+  $('#bottom').hidden = false;
+  $('#bottombar').innerHTML = `<div class="sum">${n} ${n === 1 ? 'producto' : 'productos'}<small>${esc(sub)}</small></div>
+    <span class="spacer"></span>
+    <button class="btn primary" data-act="revisar" ${n ? '' : 'disabled'}>Revisar y enviar</button>`;
+}
+
+function refrescarFila(id){
+  const p = provPorNombre(ui.prov), d = draft(p.proveedor, ui.entrega), v = d.q[id] || 0;
+  const row = document.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
+  if (row){ row.classList.toggle('on', v > 0); const b = row.querySelector('.q'); b.textContent = fmtQ(v); }
+  const es = entregasDe(p);
+  if (es.length > 1){ const b = document.querySelector(`.seg [data-e="${ui.entrega}"]`); if (b){ const l = lineas(p.proveedor, ui.entrega); b.textContent = NOMBRE_DIA[ui.entrega][0].toUpperCase()+NOMBRE_DIA[ui.entrega].slice(1)+' '+fechaCorta(proximaFecha(ui.entrega))+(l ? ' · '+l : ''); } }
+  renderBottom();
+}
+function setQ(id, v){
+  const p = provPorNombre(ui.prov), d = draft(p.proveedor, ui.entrega);
+  v = Math.max(0, Math.round(v * 100) / 100);
+  if (v) d.q[id] = v; else delete d.q[id];
+  guardar(); refrescarFila(id);
+}
+
+/* ===== Teclado de cantidades ===== */
+function abrirTeclado(id){
+  const x = prodsDe(ui.prov).find(p => p.id === id); if (!x) return;
+  const d = draft(ui.prov, ui.entrega);
+  let ent = '', frac = 0, tocado = false;
+  const ini = d.q[id] || 0;
+  const valor = () => tocado ? (parseInt(ent || '0', 10) + frac) : ini;
+  const pinta = () => { $('#kout').textContent = fmtQ(valor()); };
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="kt" onclick="event.stopPropagation()">
+    <h2 id="kt">${esc(x.producto)}</h2>
+    <div class="keyout" id="kout">${fmtQ(ini)}</div>
+    <div class="keyunit">${esc([unidadDe(x), x.habitual ? 'habitual '+x.habitual : ''].filter(Boolean).join(' · '))}</div>
+    <div class="keys">
+      ${[7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="frac" data-f="0.25">¼</button>
+      ${[4,5,6].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="frac" data-f="0.5">½</button>
+      ${[1,2,3].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="frac" data-f="0.75">¾</button>
+      <button data-k="0">0</button><button data-k="del" aria-label="Borrar">⌫</button><button class="ok wide" data-k="ok">Listo</button>
+    </div>
+    <div class="actions"><button class="btn danger" data-k="cero">Quitar del pedido</button><button class="btn" data-k="cancel">Cancelar</button></div>
+  </div></div>`;
+  $('#modal .dlg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.f){ if (!tocado){ ent=''; tocado = true; } frac = frac === +b.dataset.f ? 0 : +b.dataset.f; pinta(); return; }
+    const k = b.dataset.k;
+    if (k === 'ok'){ setQ(id, valor()); cerrar(); return; }
+    if (k === 'cero'){ setQ(id, 0); cerrar(); return; }
+    if (k === 'cancel'){ cerrar(); return; }
+    if (k === 'del'){ tocado = true; if (frac) frac = 0; else ent = ent.slice(0,-1); pinta(); return; }
+    if (k != null){ if (!tocado){ ent=''; frac=0; tocado = true; } if (ent.length < 4) ent = (ent === '0' ? '' : ent) + k; pinta(); }
+  });
+}
+function cerrar(){ $('#modal').innerHTML = ''; }
+
+/* ===== Revisar y enviar ===== */
+function textoPedido(p){
+  const es = entregasDe(p), partes = [];
+  for (const e of (es.length ? es : [''])){
+    const d = drafts[dkey(p.proveedor, e)]; if (!d) continue;
+    const its = prodsDe(p.proveedor).filter(x => d.q[x.id] > 0);
+    if (!its.length) continue;
+    const cab = e ? `*Entrega ${NOMBRE_DIA[e]} ${fechaCorta(proximaFecha(e))}*\n` : '';
+    partes.push(cab + its.map(x => { const u = unidadDe(x); return `- ${x.producto}: ${fmtQ(d.q[x.id])}${u ? ' '+u : ''}`; }).join('\n'));
+  }
+  const saludo = p.contacto ? `Hola ${p.contacto.split(' ')[0]}, ` : 'Hola, ';
+  const hoy = new Date();
+  return `${saludo}pedido de ${cfg.local || 'nuestro local'} (${NOMBRE_DIA[COD_JS[hoy.getDay()]]} ${fechaCorta(hoy)}):\n\n${partes.join('\n\n')}\n\nGracias`;
+}
+function abrirRevisar(){
+  const p = provPorNombre(ui.prov);
+  const wa = String(p.whatsapp||'').replace(/\D/g,'');
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rt" onclick="event.stopPropagation()">
+    <h2 id="rt">Pedido a ${esc(p.proveedor)}</h2>
+    <p class="muted">${wa ? 'Se abrirá WhatsApp con este mensaje. Puedes cambiar el texto antes.' : 'Este proveedor no tiene WhatsApp en la hoja. Copia el texto o guarda el pedido.'}</p>
+    <div class="field"><label for="msg">Mensaje</label><textarea id="msg">${esc(textoPedido(p))}</textarea></div>
+    <div class="actions">
+      ${wa ? `<button class="btn primary" data-r="wa">Enviar por WhatsApp</button>` : ''}
+      <button class="btn" data-r="copiar">Copiar texto</button>
+      <button class="btn" data-r="guardar">${wa ? 'Guardar sin enviar' : 'Guardar pedido'}</button>
+    </div></div></div>`;
+  $('#modal .dlg').addEventListener('click', async e => {
+    const b = e.target.closest('button[data-r]'); if (!b) return;
+    const txt = $('#msg').value;
+    if (b.dataset.r === 'copiar'){
+      try { await navigator.clipboard.writeText(txt); toast('Texto copiado'); }
+      catch(err){ $('#msg').select(); toast('Selecciona el texto y cópialo'); }
+      return;
+    }
+    if (b.dataset.r === 'wa'){
+      window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(txt), '_blank');
+      registrar(p, true);
+      toast('Pedido abierto en WhatsApp y guardado');
+    } else {
+      registrar(p, false);
+      toast('Pedido guardado');
+    }
+    cerrar(); render();
+  });
+}
+function registrar(p, marcarEnviado){
+  const es = entregasDe(p), ahora = new Date().toISOString();
+  for (const e of (es.length ? es : [''])){
+    const d = drafts[dkey(p.proveedor, e)]; if (!d) continue;
+    const its = prodsDe(p.proveedor).filter(x => d.q[x.id] > 0);
+    if (!its.length) continue;
+    d.enviado = ahora;
+    cola.push({accion:'pedido', pedido: p.proveedor.replace(/\W+/g,'').slice(0,12)+'-'+(e||'U')+'-'+Date.now().toString(36), ts: ahora,
+      proveedor: p.proveedor, entrega: e ? NOMBRE_DIA[e] : '', dispositivo: cfg.dispositivo || '',
+      items: its.map(x => ({id:x.id, producto:x.producto, cantidad:d.q[x.id], unidad:unidadDe(x)}))});
+  }
+  guardar(); store.set('pp.cola', cola);
+  vaciarCola().then(() => { if (!cola.length) setSync('ok', 'Pedido guardado en la hoja'); });
+}
+
+/* ===== Ajustes ===== */
+function abrirAjustes(){
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="at" onclick="event.stopPropagation()">
+    <h2 id="at">Ajustes</h2>
+    <p class="muted">Estos datos se guardan solo en esta tablet.</p>
+    <div class="field"><label for="f-url">URL de la hoja (termina en /exec)</label><input id="f-url" type="url" inputmode="url" value="${esc(cfg.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
+    <div class="field"><label for="f-clave">Clave</label><input id="f-clave" type="text" value="${esc(cfg.clave)}" autocomplete="off"></div>
+    <div class="field"><label for="f-local">Nombre del local (sale en el mensaje)</label><input id="f-local" type="text" value="${esc(cfg.local)}"></div>
+    <div class="field"><label for="f-disp">Nombre de este dispositivo</label><input id="f-disp" type="text" value="${esc(cfg.dispositivo)}"></div>
+    <p class="muted" style="margin-top:12px">${cat && cat.actualizado ? 'Productos actualizados a las '+horaCorta(cat.actualizado)+'. ' : ''}${cola.length ? cola.length+' pedido(s) esperando a guardarse en la hoja.' : ''}</p>
+    <div class="actions"><button class="btn primary" data-a="guardar">Guardar y conectar</button><button class="btn" data-a="refrescar">Actualizar productos</button><button class="btn" data-a="cerrar">Cerrar</button></div>
+  </div></div>`;
+  $('#modal .dlg').addEventListener('click', e => {
+    const b = e.target.closest('button[data-a]'); if (!b) return;
+    if (b.dataset.a === 'guardar'){
+      cfg = {url:$('#f-url').value.trim(), clave:$('#f-clave').value.trim(), local:$('#f-local').value.trim(), dispositivo:$('#f-disp').value.trim()};
+      store.set('pp.cfg', cfg); cerrar(); cargarCatalogo(true);
+    } else if (b.dataset.a === 'refrescar'){ cerrar(); cargarCatalogo(true); }
+    else cerrar();
+  });
+}
+
+/* ===== Eventos ===== */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, id = b.dataset.id;
+  if (a === 'cerrar'){ if (e.target === b) cerrar(); return; }
+  if (a === 'ajustes') return abrirAjustes();
+  if (a === 'volver'){ ui.vista = 'inicio'; ui.buscar=''; ui.solo=false; render(); window.scrollTo(0,0); return; }
+  if (a === 'dia'){ ui.dia = b.dataset.dia; render(); return; }
+  if (a === 'abrir'){ ui.vista = 'prov'; ui.prov = b.dataset.prov; ui.entrega=''; ui.buscar=''; ui.solo=false; render(); window.scrollTo(0,0); return; }
+  if (a === 'demo'){ fetch('catalogo.json').then(r => r.json()).then(j => { cat = Object.assign({ultimos:{}, actualizado:new Date().toISOString()}, j); store.set('pp.cat', cat); setSync('warn','Datos de ejemplo'); render(); }); return; }
+  if (ui.vista !== 'prov') return;
+  const p = provPorNombre(ui.prov), d = draft(p.proveedor, ui.entrega);
+  if (a === 'mas'){ const v = d.q[id] || 0; setQ(id, v < 1 && v > 0 ? 1 : v + 1); }
+  else if (a === 'menos'){ const v = d.q[id] || 0; setQ(id, v > 1 ? v - 1 : 0); }
+  else if (a === 'teclado') abrirTeclado(id);
+  else if (a === 'hab'){ const x = prodsDe(p.proveedor).find(z => z.id === id); const h = parseHabitual(x.habitual); if (h) setQ(id, h); }
+  else if (a === 'entrega'){ ui.entrega = b.dataset.e; renderProv(); }
+  else if (a === 'solo'){ ui.solo = !ui.solo; renderProv(); }
+  else if (a === 'habituales'){
+    let n = 0; for (const x of prodsDe(p.proveedor)){ const h = parseHabitual(x.habitual); if (h && !d.q[x.id]){ d.q[x.id] = h; n++; } }
+    guardar(); renderProv(); toast(n ? 'Puestas '+n+' cantidades habituales. Ajusta lo que sobre.' : 'No hay habituales que poner');
+  }
+  else if (a === 'repetir'){
+    const ult = (cat.ultimos||{})[p.proveedor+'|'+(ui.entrega ? NOMBRE_DIA[ui.entrega] : '')];
+    if (!ult) return;
+    const ids = new Set(prodsDe(p.proveedor).map(x => x.id)); let n = 0;
+    for (const it of ult.items){ if (ids.has(it.id) && +it.cantidad > 0){ d.q[it.id] = +it.cantidad; n++; } }
+    guardar(); renderProv(); toast('Copiado el pedido del '+new Date(ult.fecha).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'})+' ('+n+(n === 1 ? ' producto)' : ' productos)'));
+  }
+  else if (a === 'vaciar'){
+    if (b.dataset.confirm){ d.q = {}; d.enviado = null; guardar(); renderProv(); toast('Pedido vaciado'); }
+    else { b.dataset.confirm = '1'; b.textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { if (b.isConnected){ delete b.dataset.confirm; b.textContent = 'Vaciar'; } }, 3000); }
+  }
+  else if (a === 'revisar') abrirRevisar();
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'buscar'){
+    ui.buscar = e.target.value;
+    const p = provPorNombre(ui.prov); $('.list').innerHTML = listaHTML(p, draft(p.proveedor, ui.entrega));
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal').innerHTML) cerrar(); });
+
+let tt;
+function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(() => el.hidden = true, 3200); }
+
+/* ===== Arranque ===== */
+if (cat) setSync('', 'Copia guardada');
+render();
+cargarCatalogo(false);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.url && (!cat || Date.now() - new Date(cat.actualizado).getTime() > 30*60*1000)) cargarCatalogo(false); });
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
