@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pedidos Buenas y Santas</title>
-<meta name="theme-color" content="#1e6b4e">
+<meta name="theme-color" content="#d9eedf">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pedidos">
@@ -13,542 +13,452 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&display=swap">
 <style>
-/* Layout: cajas de mercado. Inicio = rejilla de proveedores del día; proveedor = lista con contadores grandes y barra de envío fija. */
+/* Una sola mirada: lista limpia de proveedores con su color; dentro, filas con contador redondo y barra de envío abajo. */
 :root{
-  --bg:#eaefe9; --surface:#f8faf7; --ink:#16241d; --muted:#5b6b62; --line:#cfd9d1;
-  --basil:#1e6b4e; --basil-ink:#ffffff; --leaf:#d3eadb; --leaf-line:#8cc3a3;
-  --tomato:#b8432b; --tomato-bg:#f8e1da; --sun:#f3c94f;
-  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
-  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --r-sm:8px; --r-md:14px;
+  --bg:#d9eedf; --card:#ffffff; --ink:#173a2b; --soft:#5d7a6b; --line:#c3e0cc;
+  --accent:#1f7a4d; --accent-ink:#ffffff; --accent-soft:#e3f3e8;
+  --done:#1f7a4d; --done-soft:#d2ecdb; --part:#b26a00; --part-soft:#fdf0d8;
+  --danger:#c7372f;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shadow:0 1px 2px rgb(23 58 43 / .06),0 4px 14px rgb(23 58 43 / .06);
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#101814; --surface:#18231d; --ink:#e4ede7; --muted:#9db0a5; --line:#2b3a32;
-  --basil:#4fb585; --basil-ink:#0d1a13; --leaf:#1d3a2b; --leaf-line:#3f7a5b;
-  --tomato:#ec7f63; --tomato-bg:#3a1f18; --sun:#e4b93c; color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 var(--body);-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none}
 button,input,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
-.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1280px;margin:0 auto}
+.wrap{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));max-width:1180px;margin:0 auto}
 
-/* Barra superior */
-.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
-.top .wrap{display:flex;align-items:center;gap:12px;min-height:64px;padding-block:8px}
-.brand{font:700 30px/1 var(--display);letter-spacing:.01em;margin:0}
-.brand small{display:block;font:400 14px/1.2 var(--body);color:var(--muted);letter-spacing:0;margin-top:3px}
-.spacer{flex:1}
-.iconbtn{min-width:52px;height:52px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 14px;font-weight:700}
-.iconbtn svg{width:24px;height:24px}
-.sync{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
-.sync i{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block}
-.sync.ok i{background:var(--basil)} .sync.warn i{background:var(--sun)} .sync.err i{background:var(--tomato)}
+/* Cabecera */
+.top{position:sticky;top:0;z-index:20;background:var(--bg);padding-top:env(safe-area-inset-top,0px)}
+.top .wrap{display:flex;align-items:center;gap:14px;min-height:76px;padding-block:12px}
+.title{margin:0;font:800 34px/1 var(--display);letter-spacing:-.02em}
+.date{color:var(--soft);font-size:16px;margin-left:auto;text-align:right}
+.back{display:inline-flex;align-items:center;gap:6px;height:48px;padding:0 16px 0 10px;border-radius:999px;background:var(--card);box-shadow:var(--shadow);font-weight:700;font-size:16px}
+.back svg{width:22px;height:22px}
 
-/* Días */
-.days{display:flex;gap:8px;padding-block:14px;overflow-x:auto}
-.day{flex:1 0 auto;min-width:64px;height:58px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font:600 22px/1 var(--display);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.day small{font:400 12px var(--body);color:var(--muted)}
-.day[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.day[aria-pressed="true"] small{color:inherit;opacity:.75}
-
-h2.sec{font:600 24px/1.1 var(--display);margin:18px 0 10px}
-h2.sec span{font:400 15px var(--body);color:var(--muted);margin-left:8px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
-.grid.small{grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
-.tile{position:relative;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 16px 14px;min-height:128px;display:flex;flex-direction:column;gap:6px}
-.grid.small .tile{min-height:96px;padding:12px 14px}
-.tile .name{font:700 28px/1 var(--display);overflow-wrap:anywhere}
-.grid.small .tile .name{font-size:23px}
-.tile .meta{font-size:14px;color:var(--muted)}
-.tile .state{margin-top:auto;font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px}
-.tile.has{border-color:var(--leaf-line);background:var(--leaf)}
-.tile.has .state{color:var(--basil)}
-.tile.sent .state{color:var(--basil)}
-.tile.sent::after{content:"";position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:var(--basil) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/16px no-repeat}
+/* Inicio */
+.summary{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 18px}
+.pill{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;font-size:15px;font-weight:700;background:var(--card);color:var(--soft)}
+.pill i{width:9px;height:9px;border-radius:50%;background:currentColor}
+.pill.part{background:var(--part-soft);color:var(--part)}
+.pill.done{background:var(--done-soft);color:var(--done)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding-bottom:40px}
+.prov{display:flex;align-items:center;gap:16px;text-align:left;background:var(--card);border-radius:20px;padding:16px 18px;min-height:92px;box-shadow:var(--shadow);transition:transform .12s}
+.prov:active{transform:scale(.985)}
+.avatar{flex:none;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:800 20px/1 var(--display);letter-spacing:-.02em;color:var(--accent);background:var(--accent-soft)}
+.prov .txt{flex:1;min-width:0}
+.prov .name{font:700 21px/1.15 var(--display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.prov .sub{color:var(--soft);font-size:15px;margin-top:3px}
+.status{flex:none;font-size:14px;font-weight:700;padding:6px 12px;border-radius:999px;background:var(--bg);color:var(--soft)}
+.status.part{background:var(--part-soft);color:var(--part)}
+.status.done{background:var(--done-soft);color:var(--done)}
 
 /* Proveedor */
-.provhead{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 18px;padding-block:14px 6px}
-.provhead h1{font:700 44px/0.95 var(--display);margin:0;overflow-wrap:anywhere}
-.provhead .contact{color:var(--muted);font-size:15px;user-select:text}
-.note{background:var(--tomato-bg);color:var(--ink);border-left:5px solid var(--tomato);border-radius:var(--r-sm);padding:10px 14px;margin-block:8px;font-size:16px}
-.seg{display:flex;gap:8px;margin-block:10px;flex-wrap:wrap}
-.seg button{height:54px;padding:0 20px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font:600 22px var(--display)}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.seg .lbl{align-self:center;color:var(--muted);font-size:15px}
-.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-block:8px 12px;position:sticky;top:calc(81px + env(safe-area-inset-top,0px));z-index:10;background:var(--bg)}
-.search{flex:1 1 220px;height:52px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);padding:0 14px;min-width:0}
-.btn{height:52px;padding:0 16px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--surface);font-weight:700;white-space:nowrap}
-.btn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.btn:disabled{opacity:.45;cursor:default}
-.btn.primary{background:var(--basil);color:var(--basil-ink);border-color:var(--basil)}
-.btn.danger{color:var(--tomato)}
-.list{display:grid;grid-template-columns:1fr;gap:8px;padding-bottom:120px}
-@media (min-width:900px){.list{grid-template-columns:1fr 1fr}}
-.list h3{grid-column:1/-1;font:600 22px var(--display);margin:12px 0 0;color:var(--muted)}
-.row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px 8px 8px 14px;min-height:78px}
-.row.on{background:var(--leaf);border-color:var(--leaf-line)}
+.head{display:flex;align-items:center;gap:16px;padding-block:6px 4px}
+.head .avatar{width:64px;height:64px;font-size:23px;background:var(--card)}
+.head h1{margin:0;font:800 38px/1 var(--display);letter-spacing:-.02em;overflow-wrap:anywhere}
+.head .sub{color:var(--soft);font-size:15px;margin-top:5px;user-select:text}
+.note{margin-top:14px;padding:12px 16px;border-radius:14px;background:var(--part-soft);color:#7a4a00;font-weight:500}
+.status{background:var(--accent-soft)}
+.tabs{display:flex;gap:6px;margin-top:16px;padding:5px;background:var(--card);border-radius:16px;box-shadow:var(--shadow);width:max-content;max-width:100%;overflow-x:auto}
+.tabs button{height:48px;padding:0 20px;border-radius:12px;font-weight:700;color:var(--soft);white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.tools{position:sticky;top:calc(76px + env(safe-area-inset-top,0px));z-index:10;background:var(--bg);display:flex;flex-wrap:wrap;gap:8px;padding-block:14px 12px}
+.search{flex:1 1 240px;min-width:0;height:52px;border:0;border-radius:14px;background:var(--card);box-shadow:var(--shadow);padding:0 18px 0 46px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6b78' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:16px center;background-size:20px}
+.search::placeholder{color:var(--soft)}
+.chipbtn{height:52px;padding:0 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-weight:700;font-size:16px;white-space:nowrap}
+.chipbtn[aria-pressed="true"]{background:var(--ink);color:#fff}
+.chipbtn.danger{color:var(--danger)}
+.list{display:grid;grid-template-columns:1fr;gap:8px;padding-bottom:130px}
+@media (min-width:920px){.list{grid-template-columns:1fr 1fr}}
+.list h3{grid-column:1/-1;margin:14px 0 2px;font:700 19px var(--display);color:var(--soft)}
+.row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:10px 10px 10px 18px;min-height:82px;box-shadow:var(--shadow);border:2px solid transparent;transition:border-color .15s,background-color .15s}
+.row.on{border-color:var(--accent);background:#f6fbf8}
 .row .txt{flex:1;min-width:0}
-.row .pn{font-weight:700;font-size:18px;line-height:1.2;overflow-wrap:anywhere}
-.row .hint{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;font-size:14px;color:var(--muted)}
-.chip{border:1px dashed var(--muted);background:transparent;border-radius:999px;padding:3px 10px;font-size:14px;color:var(--ink)}
-.stepper{display:flex;align-items:center;gap:4px;flex:none}
-.stepper button{width:58px;height:58px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:600 32px/1 var(--display);display:flex;align-items:center;justify-content:center}
-.stepper .plus{background:var(--basil);color:var(--basil-ink);border-color:var(--basil)}
-.stepper .q{width:74px;font-size:34px;background:transparent;border-color:transparent;font-variant-numeric:tabular-nums}
-.row:not(.on) .q{color:var(--muted)}
-.empty{padding:40px 0;color:var(--muted);text-align:center}
+.row .pn{font-weight:700;font-size:18px;line-height:1.25;overflow-wrap:anywhere}
+.row .hint{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px;font-size:14px;color:var(--soft)}
+.hab{padding:4px 11px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:14px}
+.hab:disabled{background:var(--bg);color:var(--soft);font-weight:500}
+.stepper{flex:none;display:flex;align-items:center;gap:6px}
+.stepper button{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font:600 30px/1 var(--body)}
+.stepper .minus{background:var(--bg);color:var(--ink)}
+.stepper .plus{background:var(--accent);color:var(--accent-ink)}
+.stepper .q{width:66px;height:56px;border-radius:14px;font:800 30px/1 var(--display);font-variant-numeric:tabular-nums}
+.row:not(.on) .q{color:#b7c9bd}
+.row:not(.on) .minus{opacity:.45}
+.empty{padding:50px 0;text-align:center;color:var(--soft)}
 
 /* Barra inferior */
-.bottom{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--ink);color:var(--bg);padding-bottom:env(safe-area-inset-bottom,0px)}
-.bottom .wrap{display:flex;align-items:center;gap:14px;min-height:80px;padding-block:10px}
-.bottom .sum{font:600 26px/1 var(--display)}
-.bottom .sum small{display:block;font:400 14px var(--body);opacity:.75;margin-top:4px}
-.bottom .btn{height:58px;font-size:18px;padding:0 24px;border:0}
-.bottom .btn.primary{background:var(--basil);color:var(--basil-ink)}
-@media (prefers-color-scheme:dark){.bottom .btn.primary{background:var(--bg);color:var(--ink)}}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
+.bar .wrap{display:flex;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:22px;min-height:78px;padding-block:12px;max-width:1140px;margin-inline:max(14px,env(safe-area-inset-left,0px)) max(14px,env(safe-area-inset-right,0px));box-shadow:0 10px 30px rgb(29 27 38 / .25)}
+@media (min-width:1170px){.bar .wrap{margin-inline:auto}}
+.bar .n{font:800 28px/1 var(--display)}
+.bar .s{font-size:14px;opacity:.7;margin-top:4px}
+.bar .send{margin-left:auto;height:56px;padding:0 26px;border-radius:16px;background:#7fd3a0;color:var(--ink);font-weight:700;font-size:18px}
+.bar .send:disabled{opacity:.35}
 
 /* Ventanas */
-.scrim{position:fixed;inset:0;background:rgb(8 14 11 / .55);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom,0px))}
+.scrim{position:fixed;inset:0;z-index:50;background:rgb(23 58 43 / .45);display:flex;align-items:flex-end;justify-content:center;padding:14px;padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
 @media (min-width:700px){.scrim{align-items:center}}
-.dlg{background:var(--surface);color:var(--ink);border-radius:18px;width:100%;max-width:560px;max-height:92%;overflow:auto;padding:20px}
-.dlg h2{font:700 32px/1 var(--display);margin:0 0 6px}
-.dlg p{margin:6px 0}
-.dlg .muted{color:var(--muted);font-size:15px}
-.keyout{font:700 64px/1 var(--display);text-align:center;padding:10px 0 4px;font-variant-numeric:tabular-nums}
-.keyunit{text-align:center;color:var(--muted);margin-bottom:12px;min-height:1.4em}
+.dlg{width:100%;max-width:520px;max-height:92%;overflow:auto;background:var(--card);border-radius:26px;padding:24px}
+.dlg h2{margin:0;font:800 28px/1.1 var(--display);letter-spacing:-.01em}
+.dlg .muted{color:var(--soft);font-size:15px;margin:6px 0 0}
+.kout{font:800 72px/1 var(--display);text-align:center;margin-top:14px;font-variant-numeric:tabular-nums}
+.kunit{text-align:center;color:var(--soft);min-height:1.4em;margin:6px 0 16px}
 .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.keys button{height:66px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:600 30px var(--display)}
-.keys .frac{background:var(--leaf);border-color:var(--leaf-line)}
-.keys .wide{grid-column:span 2}
-.keys .ok{background:var(--basil);color:var(--basil-ink);border-color:var(--basil);font-size:26px}
-.field{display:flex;flex-direction:column;gap:6px;margin-top:14px}
-.field label{font-weight:700}
-.field input,.field textarea{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--bg);padding:12px 14px;min-height:52px;width:100%}
-.field textarea{min-height:240px;font-size:16px;line-height:1.45;resize:vertical}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-.actions .btn{flex:1 1 180px;height:58px}
-.copybox{user-select:all;background:var(--bg);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 12px;font-size:15px;overflow-wrap:anywhere}
-.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:14px 22px;border-radius:12px;z-index:60;font-weight:700;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgb(0 0 0 / .25)}
-.welcome{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;margin-top:16px;max-width:680px}
-.welcome h2{font:700 34px/1 var(--display);margin:0 0 8px}
-.welcome ol{padding-left:22px;margin:8px 0}
-@media (max-width:520px){
-  .stepper button{width:48px;height:52px}.stepper .q{width:54px;font-size:28px}
-  .provhead h1{font-size:36px}.bottom .btn{padding:0 16px}
-  .iconbtn span,.sync span{display:none}
+.keys button{height:66px;border-radius:16px;background:var(--bg);font:700 28px var(--display)}
+.keys .fr{background:var(--accent-soft);color:var(--accent)}
+.keys .ok{grid-column:span 2;background:var(--accent);color:var(--accent-ink);font-size:22px}
+.row2{display:flex;gap:10px;margin-top:12px}
+.row2 button{flex:1;height:54px;border-radius:14px;background:var(--bg);font-weight:700}
+.row2 .danger{color:var(--danger)}
+.msg{width:100%;min-height:260px;margin-top:14px;border:0;border-radius:16px;background:var(--bg);padding:14px 16px;font-size:16px;line-height:1.5;resize:vertical}
+.acts{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.acts button{height:58px;border-radius:16px;font-weight:700;font-size:18px;background:var(--bg)}
+.acts .wa{background:#1f8a5b;color:#fff;display:flex;align-items:center;justify-content:center;gap:10px}
+.acts .wa svg{width:24px;height:24px}
+.toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--ink);color:#fff;padding:14px 22px;border-radius:16px;font-weight:700;max-width:calc(100% - 32px);box-shadow:0 8px 24px rgb(29 27 38 / .25)}
+
+@media (max-width:560px){
+  .title{font-size:28px}.date{font-size:14px}
+  .grid{grid-template-columns:1fr}
+  .stepper button{width:48px;height:48px;font-size:26px}.stepper .q{width:52px;font-size:26px}
+  .row{padding-left:14px}.head h1{font-size:30px}
+  .bar .send{padding:0 18px;font-size:16px;white-space:nowrap}
+  .bar .n{font-size:22px;white-space:nowrap}
+  .tools{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .tools::-webkit-scrollbar{display:none}
+  .search{flex:0 0 170px}
+  .tabs button{padding:0 14px}
 }
-@media (prefers-reduced-motion:no-preference){.row,.tile{transition:background-color .15s,border-color .15s}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
-<header class="top"><div class="wrap" id="topbar"></div></header>
+<header class="top"><div class="wrap" id="top"></div></header>
 <main class="wrap" id="main"></main>
-<div class="bottom" id="bottom" hidden><div class="wrap" id="bottombar"></div></div>
+<div class="bar" id="bar" hidden><div class="wrap" id="barin"></div></div>
 <div id="modal"></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
 'use strict';
-/* ===== Utilidades ===== */
+const URL_HOJA = 'https://script.google.com/macros/s/AKfycbyMwaUKlKn46HqJtZ8vmceOulgwoXaF-qGCzHZp4w32uV2Spvk-4q-Cf2qY6u7B0bur/exec';
+const LOCAL = 'Buenas y Santas';
+const CATALOGO_BASE = {"proveedores":[{"proveedor":"MERCADONA","contacto":"","telefono":"","whatsapp":"","dias":"L","entregas":"M","nota":"Compra en tienda u online."},{"proveedor":"ATLANTA","contacto":"","telefono":"911 425 093","whatsapp":"","dias":"L","entregas":"M,V","nota":""},{"proveedor":"IBEROLACTAL","contacto":"Víctor","telefono":"916 621 017 / 610 518 276","whatsapp":"34610518276","dias":"L","entregas":"M,J","nota":""},{"proveedor":"CBG","contacto":"Doménico","telefono":"661 559 248 / 972 70 33 70","whatsapp":"34661559248","dias":"L","entregas":"","nota":""},{"proveedor":"CREM DE LUX","contacto":"Paulo","telefono":"643 142 820","whatsapp":"34643142820","dias":"L","entregas":"M","nota":"Helados"},{"proveedor":"BILANDERA","contacto":"Clara","telefono":"655 31 15 69","whatsapp":"34655311569","dias":"L","entregas":"","nota":"Mínimo 3 por envío."},{"proveedor":"DUO HARINERO","contacto":"Sandra","telefono":"639 133 978","whatsapp":"34639133978","dias":"L","entregas":"","nota":"Pedido mínimo 80 €; si no, 7,26 € de portes."},{"proveedor":"DISBESA","contacto":"Vicente","telefono":"916 499 300 / 617 48 15 65","whatsapp":"34617481565","dias":"L","entregas":"M,V","nota":""},{"proveedor":"BERLYS","contacto":"Cliente 177462","telefono":"914 842 079","whatsapp":"","dias":"L","entregas":"X,S","nota":""},{"proveedor":"HUGHES","contacto":"","telefono":"916 314 006 / 607 656 226","whatsapp":"34607656226","dias":"L","entregas":"M,V","nota":""},{"proveedor":"DELTA","contacto":"José Antonio","telefono":"617 48 87 92","whatsapp":"34617488792","dias":"L","entregas":"","nota":"Café Delta Gold: mínimo 5 bolsas."},{"proveedor":"LOS FUENTEÑOS","contacto":"Isaac","telefono":"662 43 96 19","whatsapp":"34662439619","dias":"L","entregas":"","nota":"Vinos"},{"proveedor":"WINEUP","contacto":"Carolina","telefono":"62 41 22 47 (incompleto)","whatsapp":"","dias":"L","entregas":"","nota":"Revisa el teléfono: en la hoja le falta un número."},{"proveedor":"ENVAPRO","contacto":"","telefono":"91 126 50 15","whatsapp":"","dias":"L","entregas":"M","nota":"Limpieza y envases"},{"proveedor":"VARIOS","contacto":"","telefono":"","whatsapp":"","dias":"L","entregas":"","nota":"Compras sueltas (Amazon…)"}],"productos":[{"id":"p050","proveedor":"MERCADONA","seccion":"","producto":"leche semides Hacendado 1,5","unidad":"","habitual":"15","ref":"","precio":"","activo":"SI"},{"id":"p051","proveedor":"MERCADONA","seccion":"","producto":"agua c/gas grande Aguadoy1.5 lt","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p052","proveedor":"MERCADONA","seccion":"","producto":"FANTA limón 2 lt","unidad":"","habitual":"4 unidades","ref":"","precio":"","activo":"SI"},{"id":"p053","proveedor":"MERCADONA","seccion":"","producto":"gaseosa LA CASERA grande","unidad":"","habitual":"3 u","ref":"","precio":"","activo":"SI"},{"id":"p054","proveedor":"MERCADONA","seccion":"","producto":"vino blanco Casón H","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p055","proveedor":"MERCADONA","seccion":"","producto":"vino tinto Casón H","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p056","proveedor":"MERCADONA","seccion":"","producto":"pan de pita original precocido","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p057","proveedor":"MERCADONA","seccion":"","producto":"couscous mediano Bia 1k","unidad":"","habitual":"5c/menu","ref":"","precio":"","activo":"SI"},{"id":"p058","proveedor":"MERCADONA","seccion":"","producto":"garbanzos cocidos hacendado","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p059","proveedor":"MERCADONA","seccion":"","producto":"maíz dulce hacen 3x140","unidad":"","habitual":"8c/menu","ref":"","precio":"","activo":"SI"},{"id":"p060","proveedor":"MERCADONA","seccion":"","producto":"spaguetti 1k hacendado","unidad":"","habitual":"10 c/menu","ref":"","precio":"","activo":"SI"},{"id":"p061","proveedor":"MERCADONA","seccion":"","producto":"Hélices con vegetales Hacendado 1k","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p062","proveedor":"MERCADONA","seccion":"","producto":"EL PAVO placas lasaña 200 gr","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p063","proveedor":"MERCADONA","seccion":"","producto":"Avena Molida Hacendado","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p064","proveedor":"MERCADONA","seccion":"","producto":"Semillas de Chia","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p065","proveedor":"MERCADONA","seccion":"","producto":"Lavavajillas Todo en 1","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p066","proveedor":"MERCADONA","seccion":"","producto":"harina trigo hacndado 1 Kg","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p067","proveedor":"MERCADONA","seccion":"","producto":"azúcar blanco 1 Kg","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p068","proveedor":"MERCADONA","seccion":"","producto":"pan de molde SIN GLUTEN","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p069","proveedor":"MERCADONA","seccion":"","producto":"filetes de anchoa X3","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p070","proveedor":"MERCADONA","seccion":"","producto":"Tónica original Schweppes 33 cl","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p071","proveedor":"MERCADONA","seccion":"","producto":"SPRITE","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p072","proveedor":"MERCADONA","seccion":"","producto":"Ambientador automatico","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p073","proveedor":"MERCADONA","seccion":"","producto":"Lenteja cocida Hacendado 570g","unidad":"","habitual":"9","ref":"","precio":"","activo":"SI"},{"id":"p074","proveedor":"MERCADONA","seccion":"","producto":"bolsa de basura 30 l chica","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p075","proveedor":"MERCADONA","seccion":"","producto":"Papel Multiusos Resist Bosque","unidad":"","habitual":"14","ref":"","precio":"","activo":"SI"},{"id":"p076","proveedor":"MERCADONA","seccion":"","producto":"mantequilla hacen s/sal 250 gr","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p077","proveedor":"MERCADONA","seccion":"","producto":"mayonesa hacendado 500 ml","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p078","proveedor":"MERCADONA","seccion":"","producto":"nata ligera para cocinar","unidad":"","habitual":"24","ref":"","precio":"","activo":"SI"},{"id":"p079","proveedor":"MERCADONA","seccion":"","producto":"bebida de soja","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p080","proveedor":"MERCADONA","seccion":"","producto":"Dulce de Leche Chimbote","unidad":"","habitual":"7","ref":"","precio":"","activo":"SI"},{"id":"p081","proveedor":"MERCADONA","seccion":"","producto":"Yogur Griego","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p082","proveedor":"MERCADONA","seccion":"","producto":"Azucar Glas Hacendado 500grs","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p083","proveedor":"MERCADONA","seccion":"","producto":"agua con gas 500 ml","unidad":"","habitual":"8 PACK","ref":"","precio":"","activo":"SI"},{"id":"p084","proveedor":"MERCADONA","seccion":"","producto":"Aceite de Oliva 3 litros","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p085","proveedor":"MERCADONA","seccion":"","producto":"Margarina","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p086","proveedor":"MERCADONA","seccion":"","producto":"Leche condensada","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p087","proveedor":"MERCADONA","seccion":"","producto":"frutos rojos LA SIERNA","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p088","proveedor":"MERCADONA","seccion":"","producto":"Mezcla de setas boletus","unidad":"","habitual":"4 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p089","proveedor":"MERCADONA","seccion":"","producto":"Nuez troceda pelada","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p090","proveedor":"MERCADONA","seccion":"","producto":"Café Soluble","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p091","proveedor":"MERCADONA","seccion":"","producto":"Aquarius Limon","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p092","proveedor":"MERCADONA","seccion":"","producto":"Aquarius Naranja","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p093","proveedor":"ATLANTA","seccion":"","producto":"Caesar dressing 4 bote","unidad":"","habitual":"2 bote","ref":"","precio":"","activo":"SI"},{"id":"p094","proveedor":"ATLANTA","seccion":"","producto":"Croutons Italian 6 bolsas","unidad":"","habitual":"2 bol","ref":"","precio":"","activo":"SI"},{"id":"p095","proveedor":"ATLANTA","seccion":"","producto":"Palomitas de pollo 10 kg","unidad":"","habitual":"12 bol","ref":"","precio":"","activo":"SI"},{"id":"p096","proveedor":"ATLANTA","seccion":"","producto":"Patata dipper","unidad":"","habitual":"1 cajas","ref":"","precio":"","activo":"SI"},{"id":"p097","proveedor":"ATLANTA","seccion":"","producto":"Wrap de espinaca","unidad":"","habitual":"2 paquetes","ref":"","precio":"","activo":"SI"},{"id":"p098","proveedor":"ATLANTA","seccion":"","producto":"Falafel","unidad":"","habitual":"1 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p099","proveedor":"ATLANTA","seccion":"","producto":"Maiz congelado 2,5kg","unidad":"","habitual":"1/2 cajón","ref":"","precio":"","activo":"SI"},{"id":"p100","proveedor":"IBEROLACTAL","seccion":"","producto":"Brie","unidad":"","habitual":"4 pieza","ref":"","precio":"","activo":"SI"},{"id":"p101","proveedor":"IBEROLACTAL","seccion":"","producto":"Cabra rulo","unidad":"","habitual":"3 piezas","ref":"","precio":"","activo":"SI"},{"id":"p102","proveedor":"IBEROLACTAL","seccion":"","producto":"Emmental rallado","unidad":"","habitual":"8 bolsas","ref":"","precio":"","activo":"SI"},{"id":"p103","proveedor":"IBEROLACTAL","seccion":"","producto":"Mezcla 70/30 rallado","unidad":"","habitual":"18 bolsas","ref":"","precio":"","activo":"SI"},{"id":"p104","proveedor":"IBEROLACTAL","seccion":"","producto":"Queso azul","unidad":"","habitual":"1/2 pieza","ref":"","precio":"","activo":"SI"},{"id":"p105","proveedor":"IBEROLACTAL","seccion":"","producto":"Escamas par Gran Moravia","unidad":"","habitual":"4 bol","ref":"","precio":"","activo":"SI"},{"id":"p106","proveedor":"IBEROLACTAL","seccion":"","producto":"Feta","unidad":"","habitual":"1/2 pieza","ref":"","precio":"","activo":"SI"},{"id":"p107","proveedor":"IBEROLACTAL","seccion":"","producto":"Supermix","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p108","proveedor":"IBEROLACTAL","seccion":"","producto":"Mascarpone 1/2k","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p109","proveedor":"IBEROLACTAL","seccion":"","producto":"Quescrem","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p110","proveedor":"IBEROLACTAL","seccion":"","producto":"Nata para montar","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p111","proveedor":"IBEROLACTAL","seccion":"","producto":"Yogurt 5 kg","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p112","proveedor":"IBEROLACTAL","seccion":"","producto":"Chedar rojo","unidad":"","habitual":"1 paquetes","ref":"","precio":"","activo":"SI"},{"id":"p113","proveedor":"IBEROLACTAL","seccion":"","producto":"Aceitunas la sabrosita 4,25l","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p114","proveedor":"IBEROLACTAL","seccion":"","producto":"Provolone dulce 5 kgs sin corteza","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p115","proveedor":"CBG","seccion":"","producto":"Arroz Arboreo","unidad":"","habitual":"8 paq.","ref":"","precio":"","activo":"SI"},{"id":"p116","proveedor":"CBG","seccion":"","producto":"Ravio Calabaza","unidad":"","habitual":"3 bolsas de 3 kg","ref":"","precio":"","activo":"SI"},{"id":"p117","proveedor":"CBG","seccion":"","producto":"Raviol ricotta menú","unidad":"","habitual":"15kg/menú","ref":"","precio":"","activo":"SI"},{"id":"p118","proveedor":"CBG","seccion":"","producto":"Ñoquis patata menú","unidad":"","habitual":"15kg/menú","ref":"","precio":"","activo":"SI"},{"id":"p119","proveedor":"CREM DE LUX","seccion":"","producto":"Dulce de leche Tango","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p120","proveedor":"CREM DE LUX","seccion":"","producto":"Vainilla de gold","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p121","proveedor":"CREM DE LUX","seccion":"","producto":"frutos rojos","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p122","proveedor":"CREM DE LUX","seccion":"","producto":"Heldo menu","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p123","proveedor":"BILANDERA","seccion":"","producto":"Bailandera LUPULOVE","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p124","proveedor":"DUO HARINERO","seccion":"","producto":"Choco cobert negro puro 58","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p125","proveedor":"DUO HARINERO","seccion":"","producto":"Choco cober blanco puro 32","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p126","proveedor":"DUO HARINERO","seccion":"","producto":"Papel siliconado","unidad":"","habitual":"1/4caja","ref":"","precio":"","activo":"SI"},{"id":"p127","proveedor":"DUO HARINERO","seccion":"","producto":"Azucar glass","unidad":"","habitual":"1/2 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p128","proveedor":"DUO HARINERO","seccion":"","producto":"Cacao amargo","unidad":"","habitual":"1/2 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p129","proveedor":"DISBESA","seccion":"Sala","producto":"Colacao sobre X 50","unidad":"","habitual":"8 sobres","ref":"","precio":"","activo":"SI"},{"id":"p130","proveedor":"DISBESA","seccion":"Sala","producto":"Miel antigoteo","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p131","proveedor":"DISBESA","seccion":"Sala","producto":"Nescafe descaf","unidad":"","habitual":"8 sobres","ref":"","precio":"","activo":"SI"},{"id":"p132","proveedor":"DISBESA","seccion":"Sala","producto":"Azucar moreno en kg","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p133","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel magna barril 30","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p134","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel 00","unidad":"","habitual":"ver cajas","ref":"","precio":"","activo":"SI"},{"id":"p135","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel 1/3","unidad":"","habitual":"ver cajas","ref":"","precio":"","activo":"SI"},{"id":"p136","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel Selecta","unidad":"","habitual":"ver cajas","ref":"","precio":"","activo":"SI"},{"id":"p137","proveedor":"DISBESA","seccion":"Sala","producto":"San Migue sin gluten","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p138","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel Sin TOSTADA","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p139","proveedor":"DISBESA","seccion":"Sala","producto":"Frutos secos 1 kg","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p140","proveedor":"DISBESA","seccion":"Sala","producto":"Zumo GRANINI 330 ml","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p141","proveedor":"DISBESA","seccion":"Sala","producto":"Toallas Z","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p142","proveedor":"DISBESA","seccion":"Sala","producto":"COCA-COLA 24 lata","unidad":"","habitual":"24","ref":"","precio":"","activo":"SI"},{"id":"p143","proveedor":"DISBESA","seccion":"Sala","producto":"COCA-COLA LIGHT 24 lata","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p144","proveedor":"DISBESA","seccion":"Sala","producto":"COCA-COLA ZERO 24 lata","unidad":"","habitual":"36","ref":"","precio":"","activo":"SI"},{"id":"p145","proveedor":"DISBESA","seccion":"Sala","producto":"COC-COLA ZEROZERO 24U","unidad":"","habitual":"24","ref":"","precio":"","activo":"SI"},{"id":"p146","proveedor":"DISBESA","seccion":"Sala","producto":"FANTA limón 24 latas","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p147","proveedor":"DISBESA","seccion":"Sala","producto":"FANTA naranja 24 latas","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p148","proveedor":"DISBESA","seccion":"Sala","producto":"NESTEA 24 latas","unidad":"","habitual":"18","ref":"","precio":"","activo":"SI"},{"id":"p149","proveedor":"DISBESA","seccion":"Sala","producto":"Agua Vidaqua","unidad":"","habitual":"6 cajas","ref":"","precio":"","activo":"SI"},{"id":"p150","proveedor":"DISBESA","seccion":"Sala","producto":"Ketchup Heinz sobre","unidad":"","habitual":"1 caja","ref":"","precio":"","activo":"SI"},{"id":"p151","proveedor":"DISBESA","seccion":"Sala","producto":"Mayonesa Heinz sobre","unidad":"","habitual":"1 caja","ref":"","precio":"","activo":"SI"},{"id":"p152","proveedor":"DISBESA","seccion":"Sala","producto":"Mostaza Heinz sobre","unidad":"","habitual":"1 caja","ref":"","precio":"","activo":"SI"},{"id":"p153","proveedor":"DISBESA","seccion":"Sala","producto":"Te Masala Chai Flor de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p154","proveedor":"DISBESA","seccion":"Sala","producto":"Te Frutos del bosque de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p155","proveedor":"DISBESA","seccion":"Sala","producto":"Te Ginger Limon de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p156","proveedor":"DISBESA","seccion":"Sala","producto":"Te Rojo pu-erh Flor de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p157","proveedor":"DISBESA","seccion":"Sala","producto":"Te Roibos Naranja de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p158","proveedor":"DISBESA","seccion":"Sala","producto":"Te Manzanilla Flor de T 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p159","proveedor":"DISBESA","seccion":"Sala","producto":"Te Poleo Flor de Tisana 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p160","proveedor":"DISBESA","seccion":"Sala","producto":"Te Tila Flor de Tisana 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p161","proveedor":"DISBESA","seccion":"Sala","producto":"Te Negro Flor de T 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p162","proveedor":"DISBESA","seccion":"Sala","producto":"Te Verde Flor de T 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p163","proveedor":"DISBESA","seccion":"Sala","producto":"Cacao Amargo","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p164","proveedor":"DISBESA","seccion":"Sala","producto":"Tabasco","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p165","proveedor":"DISBESA","seccion":"Cocina","producto":"Aceituna negra s/hueso","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p166","proveedor":"DISBESA","seccion":"Cocina","producto":"Amaretto","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p167","proveedor":"DISBESA","seccion":"Cocina","producto":"Arroz grano largo 5kg","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p168","proveedor":"DISBESA","seccion":"Cocina","producto":"Atun","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p169","proveedor":"DISBESA","seccion":"Cocina","producto":"Caldo Avecrem verdu","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p170","proveedor":"DISBESA","seccion":"Cocina","producto":"Maicena express","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p171","proveedor":"DISBESA","seccion":"Cocina","producto":"Mostaza grande","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p172","proveedor":"DISBESA","seccion":"Cocina","producto":"Pan rallado","unidad":"","habitual":"3 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p173","proveedor":"DISBESA","seccion":"Cocina","producto":"Salsa de Soja S/GLUTEN","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p174","proveedor":"DISBESA","seccion":"Cocina","producto":"Tomate frit 3k Gallina","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p175","proveedor":"DISBESA","seccion":"Cocina","producto":"Uvas pasas","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p176","proveedor":"DISBESA","seccion":"Cocina","producto":"Vinagre vino bco 2l","unidad":"","habitual":"1/2b","ref":"","precio":"","activo":"SI"},{"id":"p177","proveedor":"DISBESA","seccion":"Cocina","producto":"Sal Maldon","unidad":"","habitual":"1/4 bote","ref":"","precio":"","activo":"SI"},{"id":"p178","proveedor":"DISBESA","seccion":"Cocina","producto":"Tomate pomod Ginos","unidad":"","habitual":"1,5","ref":"","precio":"","activo":"SI"},{"id":"p179","proveedor":"DISBESA","seccion":"Cocina","producto":"Ajo granulado Dani","unidad":"","habitual":"1/2 b","ref":"","precio":"","activo":"SI"},{"id":"p180","proveedor":"DISBESA","seccion":"Cocina","producto":"Canela molida","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p181","proveedor":"DISBESA","seccion":"Cocina","producto":"Cebolla molida","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p182","proveedor":"DISBESA","seccion":"Cocina","producto":"Comino molido","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p183","proveedor":"DISBESA","seccion":"Cocina","producto":"Laurel en hojas","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p184","proveedor":"DISBESA","seccion":"Cocina","producto":"Nuez moscada","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p185","proveedor":"DISBESA","seccion":"Cocina","producto":"Oregano 150grs","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p186","proveedor":"DISBESA","seccion":"Cocina","producto":"Perejil hoja 150grs","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p187","proveedor":"DISBESA","seccion":"Cocina","producto":"Pimentón dulce","unidad":"","habitual":"1 bote","ref":"","precio":"","activo":"SI"},{"id":"p188","proveedor":"DISBESA","seccion":"Cocina","producto":"Pimienta negra en grano","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p189","proveedor":"DISBESA","seccion":"Cocina","producto":"Pimienta negra molid","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p190","proveedor":"DISBESA","seccion":"Cocina","producto":"Piñones","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p191","proveedor":"DISBESA","seccion":"Cocina","producto":"Sesamo bote","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p192","proveedor":"DISBESA","seccion":"Cocina","producto":"Levadura Promolac","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p193","proveedor":"DISBESA","seccion":"Cocina","producto":"Salsa Tartufato","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p194","proveedor":"DISBESA","seccion":"Cocina","producto":"crema balsamica","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p195","proveedor":"DISBESA","seccion":"Cocina","producto":"Girasol altoleico 25lt","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p196","proveedor":"DISBESA","seccion":"Cocina","producto":"Girasol 5 l","unidad":"","habitual":"4 bot","ref":"","precio":"","activo":"SI"},{"id":"p197","proveedor":"DISBESA","seccion":"Licores","producto":"Absolut","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p198","proveedor":"DISBESA","seccion":"Licores","producto":"Bacardi","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p199","proveedor":"DISBESA","seccion":"Licores","producto":"Ballantaines","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p200","proveedor":"DISBESA","seccion":"Licores","producto":"Beefeter","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p201","proveedor":"DISBESA","seccion":"Licores","producto":"Bombay","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p202","proveedor":"DISBESA","seccion":"Licores","producto":"Brugal","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p203","proveedor":"DISBESA","seccion":"Licores","producto":"Havana club 3 años","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p204","proveedor":"DISBESA","seccion":"Licores","producto":"J&B","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p205","proveedor":"DISBESA","seccion":"Licores","producto":"Johonnie Walker red","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p206","proveedor":"DISBESA","seccion":"Licores","producto":"Jose cuervo","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p207","proveedor":"DISBESA","seccion":"Licores","producto":"Fernet Branca","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p208","proveedor":"DISBESA","seccion":"Licores","producto":"Martini Blanco","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p209","proveedor":"DISBESA","seccion":"Licores","producto":"Martini Rojo","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p210","proveedor":"DISBESA","seccion":"Licores","producto":"Martini Rosato","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p211","proveedor":"DISBESA","seccion":"Licores","producto":"Bailys","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p212","proveedor":"DISBESA","seccion":"Licores","producto":"Chincon dulce","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p213","proveedor":"DISBESA","seccion":"Licores","producto":"Lemoncello Toschi","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p214","proveedor":"DISBESA","seccion":"Licores","producto":"Rua Vieja Crema de Orujo","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p215","proveedor":"DISBESA","seccion":"Licores","producto":"Rua Vieja hierbas","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p216","proveedor":"DISBESA","seccion":"Licores","producto":"Rua Vieja aguradiente","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p217","proveedor":"DISBESA","seccion":"Licores","producto":"Patxaran Etxeko","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p218","proveedor":"DISBESA","seccion":"Licores","producto":"Veterano","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p219","proveedor":"BERLYS","seccion":"","producto":"Base hojaldre 40x60","unidad":"","habitual":"10 placas","ref":"","precio":"","activo":"SI"},{"id":"p220","proveedor":"BERLYS","seccion":"","producto":"Hamburguesa rustico","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p221","proveedor":"BERLYS","seccion":"","producto":"Mini Diamante blanco","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p222","proveedor":"BERLYS","seccion":"","producto":"Diamante maiz","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p223","proveedor":"BERLYS","seccion":"","producto":"Diamante semillas","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p224","proveedor":"BERLYS","seccion":"","producto":"Diamante integral","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p225","proveedor":"BERLYS","seccion":"","producto":"Sin gluten hamburguesas","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p226","proveedor":"HUGHES","seccion":"","producto":"Tapas emp p/horno GDE","unidad":"","habitual":"2 caja","ref":"","precio":"","activo":"SI"},{"id":"p227","proveedor":"HUGHES","seccion":"","producto":"Aji molido","unidad":"","habitual":"1/4 bote","ref":"","precio":"","activo":"SI"},{"id":"p228","proveedor":"HUGHES","seccion":"","producto":"Yerba krauss","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p229","proveedor":"DELTA","seccion":"","producto":"Café Delta Gold min 5 bolsas","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p230","proveedor":"DELTA","seccion":"","producto":"Café Descaf. 1/4","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p231","proveedor":"DELTA","seccion":"","producto":"Azucar Blanca SOBRE","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p232","proveedor":"DELTA","seccion":"","producto":"Azucar Morena SOBRE","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p233","proveedor":"DELTA","seccion":"","producto":"Edulcorante SOBRE","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p234","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Lagrimas de Maria Rioja","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p235","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Ramon Bilbao crianza","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p236","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Baden Numen Ribera","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p237","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Dos de Mayo Madrid","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p238","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Honoro Vera Organico","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p239","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Rivasanz Rueda","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p240","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Godello","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p241","proveedor":"WINEUP","seccion":"","producto":"Quilmes","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p242","proveedor":"WINEUP","seccion":"","producto":"Trumpeter Malbec","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p243","proveedor":"WINEUP","seccion":"","producto":"Alfajores 12 u negros","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p244","proveedor":"WINEUP","seccion":"","producto":"Alfajores 12 u mixtos","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p245","proveedor":"WINEUP","seccion":"","producto":"Alfajores 12 u blancos","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p246","proveedor":"ENVAPRO","seccion":"","producto":"Desengrasante planc MARRON 10 l","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p247","proveedor":"ENVAPRO","seccion":"","producto":"Detergente manual x 5l","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p248","proveedor":"ENVAPRO","seccion":"","producto":"Abrillantador maquinas 5 l","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p249","proveedor":"ENVAPRO","seccion":"","producto":"Bidon limpiacristales 5 l","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p250","proveedor":"ENVAPRO","seccion":"","producto":"Gel de mano 5l","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p251","proveedor":"ENVAPRO","seccion":"","producto":"Lavajillas maquina 5 l UN 1760","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p252","proveedor":"ENVAPRO","seccion":"","producto":"Royo bayeta absorbente","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p253","proveedor":"ENVAPRO","seccion":"","producto":"Fibra verde c/esponja","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p254","proveedor":"ENVAPRO","seccion":"","producto":"Estropajo acero Nanax","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p255","proveedor":"ENVAPRO","seccion":"","producto":"Guantes nitrilo (L)","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p256","proveedor":"ENVAPRO","seccion":"","producto":"Guantes de fregar (M)","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p257","proveedor":"ENVAPRO","seccion":"","producto":"Cepillo (escoba)","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p258","proveedor":"ENVAPRO","seccion":"","producto":"Fregonas algodón x 5","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p259","proveedor":"ENVAPRO","seccion":"","producto":"Lejia diluida x 15","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p260","proveedor":"ENVAPRO","seccion":"","producto":"Bol. Basura 85X105","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p261","proveedor":"ENVAPRO","seccion":"","producto":"Bobina aluminio (30 cm)","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p262","proveedor":"ENVAPRO","seccion":"","producto":"Bobina film (30 cm)","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p263","proveedor":"ENVAPRO","seccion":"","producto":"Bobina film (45 cm)","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p264","proveedor":"ENVAPRO","seccion":"","producto":"Papel higienico","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p265","proveedor":"ENVAPRO","seccion":"","producto":"Servilleta 1/6 30x40 253SER52109077","unidad":"","habitual":"10","ref":"","precio":"","activo":"SI"},{"id":"p266","proveedor":"ENVAPRO","seccion":"","producto":"Bolsa pap C/asa 243BKDSKT18","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p267","proveedor":"ENVAPRO","seccion":"","producto":"Bolsa papel kraft (89143BK)","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p268","proveedor":"ENVAPRO","seccion":"","producto":"Caja de pizza ch 26(191P2727K)","unidad":"","habitual":"10","ref":"","precio":"","activo":"SI"},{"id":"p269","proveedor":"ENVAPRO","seccion":"","producto":"Caja de pizza GR 33 (243PKK3333)","unidad":"","habitual":"10","ref":"","precio":"","activo":"SI"},{"id":"p270","proveedor":"ENVAPRO","seccion":"","producto":"Cont. Porex GR (171P1654)","unidad":"","habitual":"1 pack","ref":"","precio":"","activo":"SI"},{"id":"p271","proveedor":"ENVAPRO","seccion":"","producto":"Cont porex CH (171P1476)","unidad":"","habitual":"1/2 pack","ref":"","precio":"","activo":"SI"},{"id":"p272","proveedor":"ENVAPRO","seccion":"","producto":"Ensaladera pet (225EV0514P)","unidad":"","habitual":"1/2 pa","ref":"","precio":"","activo":"SI"},{"id":"p273","proveedor":"ENVAPRO","seccion":"","producto":"Comandero 3617708 (doble)","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p274","proveedor":"ENVAPRO","seccion":"","producto":"Plato carton (92BE02P)","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p275","proveedor":"ENVAPRO","seccion":"","producto":"Servilleta CH (153PN232207)","unidad":"","habitual":"5 pack","ref":"","precio":"","activo":"SI"},{"id":"p276","proveedor":"ENVAPRO","seccion":"","producto":"VASO CARTÓN EFECTO KRAFT 12-14 oz","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p277","proveedor":"ENVAPRO","seccion":"","producto":"VASO TÉRMICO POREX BLA 7 oz 200 ml","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p278","proveedor":"ENVAPRO","seccion":"","producto":"TAPA PLANA PLÁST VASO TÉRMICO 7oz","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p279","proveedor":"ENVAPRO","seccion":"","producto":"PERGAMINO ANTIGRAS 31X28 89R2831B","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p280","proveedor":"ENVAPRO","seccion":"","producto":"pajitas","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p281","proveedor":"VARIOS","seccion":"","producto":"Bayeta punto azul plancha (amazon)","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"}]};
+
+/* ---------- utilidades ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store = {
   get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
   set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 };
-const DIAS = ['L','M','X','J','V','S'];
-const NOMBRE_DIA = {L:'lunes',M:'martes',X:'miércoles',J:'jueves',V:'viernes',S:'sábado',D:'domingo'};
-const COD_JS = ['D','L','M','X','J','V','S'];
+const COD = ['D','L','M','X','J','V','S'];
+const DIA = {L:'lunes',M:'martes',X:'miércoles',J:'jueves',V:'viernes',S:'sábado',D:'domingo'};
 const hoyISO = () => { const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
-const hoyCod = () => { const c = COD_JS[new Date().getDay()]; return c === 'D' ? 'L' : c; };
-const fechaCorta = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
-const horaCorta = iso => { const d = new Date(iso); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
-function proximaFecha(cod){ const d = new Date(); for (let i=1;i<=7;i++){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()+i); if (COD_JS[x.getDay()] === cod) return x; } return d; }
-const lista = s => String(s||'').toUpperCase().split(/[\s,;\/]+/).map(x=>x.trim()).filter(x => DIAS.includes(x));
-const sinTildes = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const dm = d => String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0');
+const hm = iso => { const d = new Date(iso); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); };
+const cap = s => s ? s[0].toUpperCase()+s.slice(1) : s;
+function proxima(cod){ const d = new Date(); for (let i=1;i<=7;i++){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()+i); if (COD[x.getDay()] === cod) return x; } return d; }
+const dias = s => String(s||'').toUpperCase().split(/[\s,;\/]+/).filter(x => 'LMXJVS'.includes(x) && x);
+const plano = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const MENORES = new Set(['de','la','las','los','del','y','el']);
+const bonito = n => String(n).trim().length <= 3 ? String(n).toUpperCase() : String(n).toLowerCase().split(/\s+/).map((w,i) => (i && MENORES.has(w)) ? w : (/^\d/.test(w) ? w.toUpperCase() : cap(w))).join(' ');
+const iniciales = n => { const w = String(n).replace(/[^\p{L}\d ]/gu,'').split(/\s+/).filter(x => x && !MENORES.has(x.toLowerCase())); return ((w[0]||'')[0] + ((w[1]||w[0]||'')[w[1] ? 0 : 1]||'')).toUpperCase(); };
+const COLORES = ['#3b3bd6','#d6453b','#1f8a5b','#c77700','#8a3bd6','#0f7c9c','#b03a7a','#56701f','#4a5568','#a3542a'];
 
 function fmtQ(n){
   if (!n) return '0';
   const e = Math.floor(n + 1e-9), f = Math.round((n - e) * 100) / 100;
   const fr = {0.25:'¼',0.5:'½',0.75:'¾'}[f];
-  if (fr) return (e ? e : '') + fr;
+  if (fr) return (e || '') + fr;
   return f ? String(n).replace('.', ',') : String(e);
 }
-function parseHabitual(t){
+function habNum(t){
   t = String(t||'').trim();
   if (!t || /men[uú]/i.test(t)) return 0;
   let m = t.match(/^(\d+)\s*\/\s*(\d+)/); if (m) return +m[1] / +m[2];
   m = t.match(/^(\d+)[.,](\d+)/); if (m) return parseFloat(m[1]+'.'+m[2]);
-  m = t.match(/^(\d+)/); if (m) return +m[1];
-  return 0;
+  m = t.match(/^(\d+)/); return m ? +m[1] : 0;
 }
-function unidadDe(p){
+function unidad(p){
   if (p.unidad && !/^pack/i.test(p.unidad)) return p.unidad;
-  const t = String(p.habitual||'').replace(/^[\d\s.,\/]+/, '').replace(/c\/\s*men[uú]/i,'').replace(/^x$/i,'').trim();
+  const t = String(p.habitual||'').replace(/^[\d\s.,\/]+/, '').replace(/c\/\s*men[uú]/i,'').trim();
   return /^[a-záéíóúñ.]+( [a-záéíóúñ.]+)?$/i.test(t) && !/ver/i.test(t) ? t.replace(/\.$/,'') : '';
 }
 
-/* ===== Estado ===== */
-const URL_HOJA = 'https://script.google.com/macros/s/AKfycbyMwaUKlKn46HqJtZ8vmceOulgwoXaF-qGCzHZp4w32uV2Spvk-4q-Cf2qY6u7B0bur/exec';
-let cfg = Object.assign({url:URL_HOJA, clave:'', local:'Buenas y Santas', dispositivo:'Tablet'}, store.get('pp.cfg', {}));
-if (!cfg.url) cfg.url = URL_HOJA;
-// Lista de la pestaña "lunes" incluida en la app: funciona aunque la hoja no responda.
-const CATALOGO_BASE = {"proveedores":[{"proveedor":"FRUTAPRO","contacto":"Rubén","telefono":"637 01 05 04 / 616 272 201","whatsapp":"34616272201","dias":"L","entregas":"","nota":""},{"proveedor":"JAVIER DIAZ","contacto":"","telefono":"669 652 495","whatsapp":"34669652495","dias":"L","entregas":"","nota":""},{"proveedor":"MERCANADALUCIA","contacto":"Zacarías","telefono":"632 56 52 0 (incompleto)","whatsapp":"","dias":"L","entregas":"","nota":"Revisa el teléfono: en la hoja le falta un número."},{"proveedor":"LAS 3 B","contacto":"","telefono":"614 04 84 06","whatsapp":"34614048406","dias":"L","entregas":"","nota":""},{"proveedor":"LA JAULA","contacto":"Rafa","telefono":"609 989 160","whatsapp":"34609989160","dias":"L","entregas":"","nota":""},{"proveedor":"MERCADONA","contacto":"","telefono":"","whatsapp":"","dias":"L","entregas":"M","nota":"Compra en tienda u online."},{"proveedor":"ATLANTA","contacto":"","telefono":"911 425 093","whatsapp":"","dias":"L","entregas":"M,V","nota":""},{"proveedor":"IBEROLACTAL","contacto":"Víctor","telefono":"916 621 017 / 610 518 276","whatsapp":"34610518276","dias":"L","entregas":"M,J","nota":""},{"proveedor":"CBG","contacto":"Doménico","telefono":"661 559 248 / 972 70 33 70","whatsapp":"34661559248","dias":"L","entregas":"","nota":""},{"proveedor":"CREM DE LUX","contacto":"Paulo","telefono":"643 142 820","whatsapp":"34643142820","dias":"L","entregas":"M","nota":"Helados"},{"proveedor":"BILANDERA","contacto":"Clara","telefono":"655 31 15 69","whatsapp":"34655311569","dias":"L","entregas":"","nota":"Mínimo 3 por envío."},{"proveedor":"DUO HARINERO","contacto":"Sandra","telefono":"639 133 978","whatsapp":"34639133978","dias":"L","entregas":"","nota":"Pedido mínimo 80 €; si no, 7,26 € de portes."},{"proveedor":"DISBESA","contacto":"Vicente","telefono":"916 499 300 / 617 48 15 65","whatsapp":"34617481565","dias":"L","entregas":"M,V","nota":""},{"proveedor":"BERLYS","contacto":"Cliente 177462","telefono":"914 842 079","whatsapp":"","dias":"L","entregas":"X,S","nota":""},{"proveedor":"HUGHES","contacto":"","telefono":"916 314 006 / 607 656 226","whatsapp":"34607656226","dias":"L","entregas":"M,V","nota":""},{"proveedor":"DELTA","contacto":"José Antonio","telefono":"617 48 87 92","whatsapp":"34617488792","dias":"L","entregas":"","nota":"Café Delta Gold: mínimo 5 bolsas."},{"proveedor":"LOS FUENTEÑOS","contacto":"Isaac","telefono":"662 43 96 19","whatsapp":"34662439619","dias":"L","entregas":"","nota":"Vinos"},{"proveedor":"WINEUP","contacto":"Carolina","telefono":"62 41 22 47 (incompleto)","whatsapp":"","dias":"L","entregas":"","nota":"Revisa el teléfono: en la hoja le falta un número."},{"proveedor":"ENVAPRO","contacto":"","telefono":"91 126 50 15","whatsapp":"","dias":"L","entregas":"M","nota":"Limpieza y envases"},{"proveedor":"VARIOS","contacto":"","telefono":"","whatsapp":"","dias":"L","entregas":"","nota":"Compras sueltas (Amazon…)"}],"productos":[{"id":"p001","proveedor":"FRUTAPRO","seccion":"","producto":"Acelga","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p002","proveedor":"FRUTAPRO","seccion":"","producto":"Ajo","unidad":"bolsa","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p003","proveedor":"FRUTAPRO","seccion":"","producto":"Aguacate","unidad":"unidades","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p004","proveedor":"FRUTAPRO","seccion":"","producto":"Albahaca fresca","unidad":"manojo","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p005","proveedor":"FRUTAPRO","seccion":"","producto":"Apio","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p006","proveedor":"FRUTAPRO","seccion":"","producto":"Berenjena economica","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p007","proveedor":"FRUTAPRO","seccion":"","producto":"Calabacin economico","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p008","proveedor":"FRUTAPRO","seccion":"","producto":"Calabaza cacahuete","unidad":"unidades","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p009","proveedor":"FRUTAPRO","seccion":"","producto":"Cebolla roja","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p010","proveedor":"FRUTAPRO","seccion":"","producto":"Cebolleta","unidad":"manojo","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p011","proveedor":"FRUTAPRO","seccion":"","producto":"Cebollino","unidad":"manojo","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p012","proveedor":"FRUTAPRO","seccion":"","producto":"Champignon","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p013","proveedor":"FRUTAPRO","seccion":"","producto":"Espinaca","unidad":"bolsa","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p014","proveedor":"FRUTAPRO","seccion":"","producto":"Hierba buena","unidad":"manojo","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p015","proveedor":"FRUTAPRO","seccion":"","producto":"Mezclum 400 grs","unidad":"bolsa","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p016","proveedor":"FRUTAPRO","seccion":"","producto":"Limón","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p017","proveedor":"FRUTAPRO","seccion":"","producto":"Lollo Rosso","unidad":"unidades","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p018","proveedor":"FRUTAPRO","seccion":"","producto":"Manzana golden","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p019","proveedor":"FRUTAPRO","seccion":"","producto":"Naranja zumo","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p020","proveedor":"FRUTAPRO","seccion":"","producto":"Patata lavada","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p021","proveedor":"FRUTAPRO","seccion":"","producto":"Patata guarnición","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p022","proveedor":"FRUTAPRO","seccion":"","producto":"Pepino","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p023","proveedor":"FRUTAPRO","seccion":"","producto":"Perejil","unidad":"manojo","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p024","proveedor":"FRUTAPRO","seccion":"","producto":"Pimiento rojo 2da","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p025","proveedor":"FRUTAPRO","seccion":"","producto":"Pimiento verde de 2da","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p026","proveedor":"FRUTAPRO","seccion":"","producto":"Puerro","unidad":"unidades","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p027","proveedor":"FRUTAPRO","seccion":"","producto":"Remolacha","unidad":"bandeja","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p028","proveedor":"FRUTAPRO","seccion":"","producto":"Rúcula 100 g","unidad":"bandeja","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p029","proveedor":"FRUTAPRO","seccion":"","producto":"Tomate cherry","unidad":"bandeja","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p030","proveedor":"FRUTAPRO","seccion":"","producto":"Tomate ensalada","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p031","proveedor":"FRUTAPRO","seccion":"","producto":"Zanahoria","unidad":"kg","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p032","proveedor":"FRUTAPRO","seccion":"","producto":"Brotes de Soja","unidad":"bandejas","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p033","proveedor":"FRUTAPRO","seccion":"","producto":"bolsa de patatas cortasdas 5kg","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p034","proveedor":"JAVIER DIAZ","seccion":"","producto":"Pollo picado","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p035","proveedor":"JAVIER DIAZ","seccion":"","producto":"Filete","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p036","proveedor":"JAVIER DIAZ","seccion":"","producto":"Huevos CARTON 30","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p037","proveedor":"JAVIER DIAZ","seccion":"","producto":"Cuartos","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p038","proveedor":"MERCANADALUCIA","seccion":"","producto":"Picada vacuno","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p039","proveedor":"MERCANADALUCIA","seccion":"","producto":"Lomo bajo","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p040","proveedor":"MERCANADALUCIA","seccion":"","producto":"Entraña añojo sin piel","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p041","proveedor":"MERCANADALUCIA","seccion":"","producto":"Filete de Ternera","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p042","proveedor":"LAS 3 B","seccion":"","producto":"Picada vacuno","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p043","proveedor":"LAS 3 B","seccion":"","producto":"Picada de cerdo","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p044","proveedor":"LAS 3 B","seccion":"","producto":"Lomo bajo","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p045","proveedor":"LAS 3 B","seccion":"","producto":"Entraña añojo sin piel","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p046","proveedor":"LAS 3 B","seccion":"","producto":"Filete de Ternera","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p047","proveedor":"LA JAULA","seccion":"","producto":"Jamon Serrano","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p048","proveedor":"LA JAULA","seccion":"","producto":"Jamon York","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p049","proveedor":"LA JAULA","seccion":"","producto":"Baicon","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p050","proveedor":"MERCADONA","seccion":"","producto":"leche semides Hacendado 1,5","unidad":"","habitual":"15","ref":"","precio":"","activo":"SI"},{"id":"p051","proveedor":"MERCADONA","seccion":"","producto":"agua c/gas grande Aguadoy1.5 lt","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p052","proveedor":"MERCADONA","seccion":"","producto":"FANTA limón 2 lt","unidad":"","habitual":"4 unidades","ref":"","precio":"","activo":"SI"},{"id":"p053","proveedor":"MERCADONA","seccion":"","producto":"gaseosa LA CASERA grande","unidad":"","habitual":"3 u","ref":"","precio":"","activo":"SI"},{"id":"p054","proveedor":"MERCADONA","seccion":"","producto":"vino blanco Casón H","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p055","proveedor":"MERCADONA","seccion":"","producto":"vino tinto Casón H","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p056","proveedor":"MERCADONA","seccion":"","producto":"pan de pita original precocido","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p057","proveedor":"MERCADONA","seccion":"","producto":"couscous mediano Bia 1k","unidad":"","habitual":"5c/menu","ref":"","precio":"","activo":"SI"},{"id":"p058","proveedor":"MERCADONA","seccion":"","producto":"garbanzos cocidos hacendado","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p059","proveedor":"MERCADONA","seccion":"","producto":"maíz dulce hacen 3x140","unidad":"","habitual":"8c/menu","ref":"","precio":"","activo":"SI"},{"id":"p060","proveedor":"MERCADONA","seccion":"","producto":"spaguetti 1k hacendado","unidad":"","habitual":"10 c/menu","ref":"","precio":"","activo":"SI"},{"id":"p061","proveedor":"MERCADONA","seccion":"","producto":"Hélices con vegetales Hacendado 1k","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p062","proveedor":"MERCADONA","seccion":"","producto":"EL PAVO placas lasaña 200 gr","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p063","proveedor":"MERCADONA","seccion":"","producto":"Avena Molida Hacendado","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p064","proveedor":"MERCADONA","seccion":"","producto":"Semillas de Chia","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p065","proveedor":"MERCADONA","seccion":"","producto":"Lavavajillas Todo en 1","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p066","proveedor":"MERCADONA","seccion":"","producto":"harina trigo hacndado 1 Kg","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p067","proveedor":"MERCADONA","seccion":"","producto":"azúcar blanco 1 Kg","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p068","proveedor":"MERCADONA","seccion":"","producto":"pan de molde SIN GLUTEN","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p069","proveedor":"MERCADONA","seccion":"","producto":"filetes de anchoa X3","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p070","proveedor":"MERCADONA","seccion":"","producto":"Tónica original Schweppes 33 cl","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p071","proveedor":"MERCADONA","seccion":"","producto":"SPRITE","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p072","proveedor":"MERCADONA","seccion":"","producto":"Ambientador automatico","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p073","proveedor":"MERCADONA","seccion":"","producto":"Lenteja cocida Hacendado 570g","unidad":"","habitual":"9","ref":"","precio":"","activo":"SI"},{"id":"p074","proveedor":"MERCADONA","seccion":"","producto":"bolsa de basura 30 l chica","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p075","proveedor":"MERCADONA","seccion":"","producto":"Papel Multiusos Resist Bosque","unidad":"","habitual":"14","ref":"","precio":"","activo":"SI"},{"id":"p076","proveedor":"MERCADONA","seccion":"","producto":"mantequilla hacen s/sal 250 gr","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p077","proveedor":"MERCADONA","seccion":"","producto":"mayonesa hacendado 500 ml","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p078","proveedor":"MERCADONA","seccion":"","producto":"nata ligera para cocinar","unidad":"","habitual":"24","ref":"","precio":"","activo":"SI"},{"id":"p079","proveedor":"MERCADONA","seccion":"","producto":"bebida de soja","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p080","proveedor":"MERCADONA","seccion":"","producto":"Dulce de Leche Chimbote","unidad":"","habitual":"7","ref":"","precio":"","activo":"SI"},{"id":"p081","proveedor":"MERCADONA","seccion":"","producto":"Yogur Griego","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p082","proveedor":"MERCADONA","seccion":"","producto":"Azucar Glas Hacendado 500grs","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p083","proveedor":"MERCADONA","seccion":"","producto":"agua con gas 500 ml","unidad":"","habitual":"8 PACK","ref":"","precio":"","activo":"SI"},{"id":"p084","proveedor":"MERCADONA","seccion":"","producto":"Aceite de Oliva 3 litros","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p085","proveedor":"MERCADONA","seccion":"","producto":"Margarina","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p086","proveedor":"MERCADONA","seccion":"","producto":"Leche condensada","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p087","proveedor":"MERCADONA","seccion":"","producto":"frutos rojos LA SIERNA","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p088","proveedor":"MERCADONA","seccion":"","producto":"Mezcla de setas boletus","unidad":"","habitual":"4 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p089","proveedor":"MERCADONA","seccion":"","producto":"Nuez troceda pelada","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p090","proveedor":"MERCADONA","seccion":"","producto":"Café Soluble","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p091","proveedor":"MERCADONA","seccion":"","producto":"Aquarius Limon","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p092","proveedor":"MERCADONA","seccion":"","producto":"Aquarius Naranja","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p093","proveedor":"ATLANTA","seccion":"","producto":"Caesar dressing 4 bote","unidad":"","habitual":"2 bote","ref":"","precio":"","activo":"SI"},{"id":"p094","proveedor":"ATLANTA","seccion":"","producto":"Croutons Italian 6 bolsas","unidad":"","habitual":"2 bol","ref":"","precio":"","activo":"SI"},{"id":"p095","proveedor":"ATLANTA","seccion":"","producto":"Palomitas de pollo 10 kg","unidad":"","habitual":"12 bol","ref":"","precio":"","activo":"SI"},{"id":"p096","proveedor":"ATLANTA","seccion":"","producto":"Patata dipper","unidad":"","habitual":"1 cajas","ref":"","precio":"","activo":"SI"},{"id":"p097","proveedor":"ATLANTA","seccion":"","producto":"Wrap de espinaca","unidad":"","habitual":"2 paquetes","ref":"","precio":"","activo":"SI"},{"id":"p098","proveedor":"ATLANTA","seccion":"","producto":"Falafel","unidad":"","habitual":"1 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p099","proveedor":"ATLANTA","seccion":"","producto":"Maiz congelado 2,5kg","unidad":"","habitual":"1/2 cajón","ref":"","precio":"","activo":"SI"},{"id":"p100","proveedor":"IBEROLACTAL","seccion":"","producto":"Brie","unidad":"","habitual":"4 pieza","ref":"","precio":"","activo":"SI"},{"id":"p101","proveedor":"IBEROLACTAL","seccion":"","producto":"Cabra rulo","unidad":"","habitual":"3 piezas","ref":"","precio":"","activo":"SI"},{"id":"p102","proveedor":"IBEROLACTAL","seccion":"","producto":"Emmental rallado","unidad":"","habitual":"8 bolsas","ref":"","precio":"","activo":"SI"},{"id":"p103","proveedor":"IBEROLACTAL","seccion":"","producto":"Mezcla 70/30 rallado","unidad":"","habitual":"18 bolsas","ref":"","precio":"","activo":"SI"},{"id":"p104","proveedor":"IBEROLACTAL","seccion":"","producto":"Queso azul","unidad":"","habitual":"1/2 pieza","ref":"","precio":"","activo":"SI"},{"id":"p105","proveedor":"IBEROLACTAL","seccion":"","producto":"Escamas par Gran Moravia","unidad":"","habitual":"4 bol","ref":"","precio":"","activo":"SI"},{"id":"p106","proveedor":"IBEROLACTAL","seccion":"","producto":"Feta","unidad":"","habitual":"1/2 pieza","ref":"","precio":"","activo":"SI"},{"id":"p107","proveedor":"IBEROLACTAL","seccion":"","producto":"Supermix","unidad":"","habitual":"8","ref":"","precio":"","activo":"SI"},{"id":"p108","proveedor":"IBEROLACTAL","seccion":"","producto":"Mascarpone 1/2k","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p109","proveedor":"IBEROLACTAL","seccion":"","producto":"Quescrem","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p110","proveedor":"IBEROLACTAL","seccion":"","producto":"Nata para montar","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p111","proveedor":"IBEROLACTAL","seccion":"","producto":"Yogurt 5 kg","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p112","proveedor":"IBEROLACTAL","seccion":"","producto":"Chedar rojo","unidad":"","habitual":"1 paquetes","ref":"","precio":"","activo":"SI"},{"id":"p113","proveedor":"IBEROLACTAL","seccion":"","producto":"Aceitunas la sabrosita 4,25l","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p114","proveedor":"IBEROLACTAL","seccion":"","producto":"Provolone dulce 5 kgs sin corteza","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p115","proveedor":"CBG","seccion":"","producto":"Arroz Arboreo","unidad":"","habitual":"8 paq.","ref":"","precio":"","activo":"SI"},{"id":"p116","proveedor":"CBG","seccion":"","producto":"Ravio Calabaza","unidad":"","habitual":"3 bolsas de 3 kg","ref":"","precio":"","activo":"SI"},{"id":"p117","proveedor":"CBG","seccion":"","producto":"Raviol ricotta menú","unidad":"","habitual":"15kg/menú","ref":"","precio":"","activo":"SI"},{"id":"p118","proveedor":"CBG","seccion":"","producto":"Ñoquis patata menú","unidad":"","habitual":"15kg/menú","ref":"","precio":"","activo":"SI"},{"id":"p119","proveedor":"CREM DE LUX","seccion":"","producto":"Dulce de leche Tango","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p120","proveedor":"CREM DE LUX","seccion":"","producto":"Vainilla de gold","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p121","proveedor":"CREM DE LUX","seccion":"","producto":"frutos rojos","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p122","proveedor":"CREM DE LUX","seccion":"","producto":"Heldo menu","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p123","proveedor":"BILANDERA","seccion":"","producto":"Bailandera LUPULOVE","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p124","proveedor":"DUO HARINERO","seccion":"","producto":"Choco cobert negro puro 58","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p125","proveedor":"DUO HARINERO","seccion":"","producto":"Choco cober blanco puro 32","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p126","proveedor":"DUO HARINERO","seccion":"","producto":"Papel siliconado","unidad":"","habitual":"1/4caja","ref":"","precio":"","activo":"SI"},{"id":"p127","proveedor":"DUO HARINERO","seccion":"","producto":"Azucar glass","unidad":"","habitual":"1/2 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p128","proveedor":"DUO HARINERO","seccion":"","producto":"Cacao amargo","unidad":"","habitual":"1/2 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p129","proveedor":"DISBESA","seccion":"Sala","producto":"Colacao sobre X 50","unidad":"","habitual":"8 sobres","ref":"","precio":"","activo":"SI"},{"id":"p130","proveedor":"DISBESA","seccion":"Sala","producto":"Miel antigoteo","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p131","proveedor":"DISBESA","seccion":"Sala","producto":"Nescafe descaf","unidad":"","habitual":"8 sobres","ref":"","precio":"","activo":"SI"},{"id":"p132","proveedor":"DISBESA","seccion":"Sala","producto":"Azucar moreno en kg","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p133","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel magna barril 30","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p134","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel 00","unidad":"","habitual":"ver cajas","ref":"","precio":"","activo":"SI"},{"id":"p135","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel 1/3","unidad":"","habitual":"ver cajas","ref":"","precio":"","activo":"SI"},{"id":"p136","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel Selecta","unidad":"","habitual":"ver cajas","ref":"","precio":"","activo":"SI"},{"id":"p137","proveedor":"DISBESA","seccion":"Sala","producto":"San Migue sin gluten","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p138","proveedor":"DISBESA","seccion":"Sala","producto":"San Miguel Sin TOSTADA","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p139","proveedor":"DISBESA","seccion":"Sala","producto":"Frutos secos 1 kg","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p140","proveedor":"DISBESA","seccion":"Sala","producto":"Zumo GRANINI 330 ml","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p141","proveedor":"DISBESA","seccion":"Sala","producto":"Toallas Z","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p142","proveedor":"DISBESA","seccion":"Sala","producto":"COCA-COLA 24 lata","unidad":"","habitual":"24","ref":"","precio":"","activo":"SI"},{"id":"p143","proveedor":"DISBESA","seccion":"Sala","producto":"COCA-COLA LIGHT 24 lata","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p144","proveedor":"DISBESA","seccion":"Sala","producto":"COCA-COLA ZERO 24 lata","unidad":"","habitual":"36","ref":"","precio":"","activo":"SI"},{"id":"p145","proveedor":"DISBESA","seccion":"Sala","producto":"COC-COLA ZEROZERO 24U","unidad":"","habitual":"24","ref":"","precio":"","activo":"SI"},{"id":"p146","proveedor":"DISBESA","seccion":"Sala","producto":"FANTA limón 24 latas","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p147","proveedor":"DISBESA","seccion":"Sala","producto":"FANTA naranja 24 latas","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p148","proveedor":"DISBESA","seccion":"Sala","producto":"NESTEA 24 latas","unidad":"","habitual":"18","ref":"","precio":"","activo":"SI"},{"id":"p149","proveedor":"DISBESA","seccion":"Sala","producto":"Agua Vidaqua","unidad":"","habitual":"6 cajas","ref":"","precio":"","activo":"SI"},{"id":"p150","proveedor":"DISBESA","seccion":"Sala","producto":"Ketchup Heinz sobre","unidad":"","habitual":"1 caja","ref":"","precio":"","activo":"SI"},{"id":"p151","proveedor":"DISBESA","seccion":"Sala","producto":"Mayonesa Heinz sobre","unidad":"","habitual":"1 caja","ref":"","precio":"","activo":"SI"},{"id":"p152","proveedor":"DISBESA","seccion":"Sala","producto":"Mostaza Heinz sobre","unidad":"","habitual":"1 caja","ref":"","precio":"","activo":"SI"},{"id":"p153","proveedor":"DISBESA","seccion":"Sala","producto":"Te Masala Chai Flor de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p154","proveedor":"DISBESA","seccion":"Sala","producto":"Te Frutos del bosque de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p155","proveedor":"DISBESA","seccion":"Sala","producto":"Te Ginger Limon de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p156","proveedor":"DISBESA","seccion":"Sala","producto":"Te Rojo pu-erh Flor de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p157","proveedor":"DISBESA","seccion":"Sala","producto":"Te Roibos Naranja de T 20 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p158","proveedor":"DISBESA","seccion":"Sala","producto":"Te Manzanilla Flor de T 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p159","proveedor":"DISBESA","seccion":"Sala","producto":"Te Poleo Flor de Tisana 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p160","proveedor":"DISBESA","seccion":"Sala","producto":"Te Tila Flor de Tisana 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p161","proveedor":"DISBESA","seccion":"Sala","producto":"Te Negro Flor de T 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p162","proveedor":"DISBESA","seccion":"Sala","producto":"Te Verde Flor de T 100 u","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p163","proveedor":"DISBESA","seccion":"Sala","producto":"Cacao Amargo","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p164","proveedor":"DISBESA","seccion":"Sala","producto":"Tabasco","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p165","proveedor":"DISBESA","seccion":"Cocina","producto":"Aceituna negra s/hueso","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p166","proveedor":"DISBESA","seccion":"Cocina","producto":"Amaretto","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p167","proveedor":"DISBESA","seccion":"Cocina","producto":"Arroz grano largo 5kg","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p168","proveedor":"DISBESA","seccion":"Cocina","producto":"Atun","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p169","proveedor":"DISBESA","seccion":"Cocina","producto":"Caldo Avecrem verdu","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p170","proveedor":"DISBESA","seccion":"Cocina","producto":"Maicena express","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p171","proveedor":"DISBESA","seccion":"Cocina","producto":"Mostaza grande","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p172","proveedor":"DISBESA","seccion":"Cocina","producto":"Pan rallado","unidad":"","habitual":"3 bolsa","ref":"","precio":"","activo":"SI"},{"id":"p173","proveedor":"DISBESA","seccion":"Cocina","producto":"Salsa de Soja S/GLUTEN","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p174","proveedor":"DISBESA","seccion":"Cocina","producto":"Tomate frit 3k Gallina","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p175","proveedor":"DISBESA","seccion":"Cocina","producto":"Uvas pasas","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p176","proveedor":"DISBESA","seccion":"Cocina","producto":"Vinagre vino bco 2l","unidad":"","habitual":"1/2b","ref":"","precio":"","activo":"SI"},{"id":"p177","proveedor":"DISBESA","seccion":"Cocina","producto":"Sal Maldon","unidad":"","habitual":"1/4 bote","ref":"","precio":"","activo":"SI"},{"id":"p178","proveedor":"DISBESA","seccion":"Cocina","producto":"Tomate pomod Ginos","unidad":"","habitual":"1,5","ref":"","precio":"","activo":"SI"},{"id":"p179","proveedor":"DISBESA","seccion":"Cocina","producto":"Ajo granulado Dani","unidad":"","habitual":"1/2 b","ref":"","precio":"","activo":"SI"},{"id":"p180","proveedor":"DISBESA","seccion":"Cocina","producto":"Canela molida","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p181","proveedor":"DISBESA","seccion":"Cocina","producto":"Cebolla molida","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p182","proveedor":"DISBESA","seccion":"Cocina","producto":"Comino molido","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p183","proveedor":"DISBESA","seccion":"Cocina","producto":"Laurel en hojas","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p184","proveedor":"DISBESA","seccion":"Cocina","producto":"Nuez moscada","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p185","proveedor":"DISBESA","seccion":"Cocina","producto":"Oregano 150grs","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p186","proveedor":"DISBESA","seccion":"Cocina","producto":"Perejil hoja 150grs","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p187","proveedor":"DISBESA","seccion":"Cocina","producto":"Pimentón dulce","unidad":"","habitual":"1 bote","ref":"","precio":"","activo":"SI"},{"id":"p188","proveedor":"DISBESA","seccion":"Cocina","producto":"Pimienta negra en grano","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p189","proveedor":"DISBESA","seccion":"Cocina","producto":"Pimienta negra molid","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p190","proveedor":"DISBESA","seccion":"Cocina","producto":"Piñones","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p191","proveedor":"DISBESA","seccion":"Cocina","producto":"Sesamo bote","unidad":"","habitual":"1/2 bote","ref":"","precio":"","activo":"SI"},{"id":"p192","proveedor":"DISBESA","seccion":"Cocina","producto":"Levadura Promolac","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p193","proveedor":"DISBESA","seccion":"Cocina","producto":"Salsa Tartufato","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p194","proveedor":"DISBESA","seccion":"Cocina","producto":"crema balsamica","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p195","proveedor":"DISBESA","seccion":"Cocina","producto":"Girasol altoleico 25lt","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p196","proveedor":"DISBESA","seccion":"Cocina","producto":"Girasol 5 l","unidad":"","habitual":"4 bot","ref":"","precio":"","activo":"SI"},{"id":"p197","proveedor":"DISBESA","seccion":"Licores","producto":"Absolut","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p198","proveedor":"DISBESA","seccion":"Licores","producto":"Bacardi","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p199","proveedor":"DISBESA","seccion":"Licores","producto":"Ballantaines","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p200","proveedor":"DISBESA","seccion":"Licores","producto":"Beefeter","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p201","proveedor":"DISBESA","seccion":"Licores","producto":"Bombay","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p202","proveedor":"DISBESA","seccion":"Licores","producto":"Brugal","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p203","proveedor":"DISBESA","seccion":"Licores","producto":"Havana club 3 años","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p204","proveedor":"DISBESA","seccion":"Licores","producto":"J&B","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p205","proveedor":"DISBESA","seccion":"Licores","producto":"Johonnie Walker red","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p206","proveedor":"DISBESA","seccion":"Licores","producto":"Jose cuervo","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p207","proveedor":"DISBESA","seccion":"Licores","producto":"Fernet Branca","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p208","proveedor":"DISBESA","seccion":"Licores","producto":"Martini Blanco","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p209","proveedor":"DISBESA","seccion":"Licores","producto":"Martini Rojo","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p210","proveedor":"DISBESA","seccion":"Licores","producto":"Martini Rosato","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p211","proveedor":"DISBESA","seccion":"Licores","producto":"Bailys","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p212","proveedor":"DISBESA","seccion":"Licores","producto":"Chincon dulce","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p213","proveedor":"DISBESA","seccion":"Licores","producto":"Lemoncello Toschi","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p214","proveedor":"DISBESA","seccion":"Licores","producto":"Rua Vieja Crema de Orujo","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p215","proveedor":"DISBESA","seccion":"Licores","producto":"Rua Vieja hierbas","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p216","proveedor":"DISBESA","seccion":"Licores","producto":"Rua Vieja aguradiente","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p217","proveedor":"DISBESA","seccion":"Licores","producto":"Patxaran Etxeko","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p218","proveedor":"DISBESA","seccion":"Licores","producto":"Veterano","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p219","proveedor":"BERLYS","seccion":"","producto":"Base hojaldre 40x60","unidad":"","habitual":"10 placas","ref":"","precio":"","activo":"SI"},{"id":"p220","proveedor":"BERLYS","seccion":"","producto":"Hamburguesa rustico","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p221","proveedor":"BERLYS","seccion":"","producto":"Mini Diamante blanco","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p222","proveedor":"BERLYS","seccion":"","producto":"Diamante maiz","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p223","proveedor":"BERLYS","seccion":"","producto":"Diamante semillas","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p224","proveedor":"BERLYS","seccion":"","producto":"Diamante integral","unidad":"","habitual":"2x","ref":"","precio":"","activo":"SI"},{"id":"p225","proveedor":"BERLYS","seccion":"","producto":"Sin gluten hamburguesas","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p226","proveedor":"HUGHES","seccion":"","producto":"Tapas emp p/horno GDE","unidad":"","habitual":"2 caja","ref":"","precio":"","activo":"SI"},{"id":"p227","proveedor":"HUGHES","seccion":"","producto":"Aji molido","unidad":"","habitual":"1/4 bote","ref":"","precio":"","activo":"SI"},{"id":"p228","proveedor":"HUGHES","seccion":"","producto":"Yerba krauss","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p229","proveedor":"DELTA","seccion":"","producto":"Café Delta Gold min 5 bolsas","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p230","proveedor":"DELTA","seccion":"","producto":"Café Descaf. 1/4","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p231","proveedor":"DELTA","seccion":"","producto":"Azucar Blanca SOBRE","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p232","proveedor":"DELTA","seccion":"","producto":"Azucar Morena SOBRE","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p233","proveedor":"DELTA","seccion":"","producto":"Edulcorante SOBRE","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p234","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Lagrimas de Maria Rioja","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p235","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Ramon Bilbao crianza","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p236","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Baden Numen Ribera","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p237","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Dos de Mayo Madrid","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p238","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Honoro Vera Organico","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p239","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Rivasanz Rueda","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p240","proveedor":"LOS FUENTEÑOS","seccion":"","producto":"Godello","unidad":"","habitual":"12","ref":"","precio":"","activo":"SI"},{"id":"p241","proveedor":"WINEUP","seccion":"","producto":"Quilmes","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p242","proveedor":"WINEUP","seccion":"","producto":"Trumpeter Malbec","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p243","proveedor":"WINEUP","seccion":"","producto":"Alfajores 12 u negros","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p244","proveedor":"WINEUP","seccion":"","producto":"Alfajores 12 u mixtos","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p245","proveedor":"WINEUP","seccion":"","producto":"Alfajores 12 u blancos","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p246","proveedor":"ENVAPRO","seccion":"","producto":"Desengrasante planc MARRON 10 l","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p247","proveedor":"ENVAPRO","seccion":"","producto":"Detergente manual x 5l","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p248","proveedor":"ENVAPRO","seccion":"","producto":"Abrillantador maquinas 5 l","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p249","proveedor":"ENVAPRO","seccion":"","producto":"Bidon limpiacristales 5 l","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p250","proveedor":"ENVAPRO","seccion":"","producto":"Gel de mano 5l","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p251","proveedor":"ENVAPRO","seccion":"","producto":"Lavajillas maquina 5 l UN 1760","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p252","proveedor":"ENVAPRO","seccion":"","producto":"Royo bayeta absorbente","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p253","proveedor":"ENVAPRO","seccion":"","producto":"Fibra verde c/esponja","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p254","proveedor":"ENVAPRO","seccion":"","producto":"Estropajo acero Nanax","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p255","proveedor":"ENVAPRO","seccion":"","producto":"Guantes nitrilo (L)","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p256","proveedor":"ENVAPRO","seccion":"","producto":"Guantes de fregar (M)","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p257","proveedor":"ENVAPRO","seccion":"","producto":"Cepillo (escoba)","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p258","proveedor":"ENVAPRO","seccion":"","producto":"Fregonas algodón x 5","unidad":"","habitual":"2","ref":"","precio":"","activo":"SI"},{"id":"p259","proveedor":"ENVAPRO","seccion":"","producto":"Lejia diluida x 15","unidad":"","habitual":"4","ref":"","precio":"","activo":"SI"},{"id":"p260","proveedor":"ENVAPRO","seccion":"","producto":"Bol. Basura 85X105","unidad":"","habitual":"3","ref":"","precio":"","activo":"SI"},{"id":"p261","proveedor":"ENVAPRO","seccion":"","producto":"Bobina aluminio (30 cm)","unidad":"","habitual":"1/2","ref":"","precio":"","activo":"SI"},{"id":"p262","proveedor":"ENVAPRO","seccion":"","producto":"Bobina film (30 cm)","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p263","proveedor":"ENVAPRO","seccion":"","producto":"Bobina film (45 cm)","unidad":"","habitual":"1","ref":"","precio":"","activo":"SI"},{"id":"p264","proveedor":"ENVAPRO","seccion":"","producto":"Papel higienico","unidad":"","habitual":"6","ref":"","precio":"","activo":"SI"},{"id":"p265","proveedor":"ENVAPRO","seccion":"","producto":"Servilleta 1/6 30x40 253SER52109077","unidad":"","habitual":"10","ref":"","precio":"","activo":"SI"},{"id":"p266","proveedor":"ENVAPRO","seccion":"","producto":"Bolsa pap C/asa 243BKDSKT18","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p267","proveedor":"ENVAPRO","seccion":"","producto":"Bolsa papel kraft (89143BK)","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p268","proveedor":"ENVAPRO","seccion":"","producto":"Caja de pizza ch 26(191P2727K)","unidad":"","habitual":"10","ref":"","precio":"","activo":"SI"},{"id":"p269","proveedor":"ENVAPRO","seccion":"","producto":"Caja de pizza GR 33 (243PKK3333)","unidad":"","habitual":"10","ref":"","precio":"","activo":"SI"},{"id":"p270","proveedor":"ENVAPRO","seccion":"","producto":"Cont. Porex GR (171P1654)","unidad":"","habitual":"1 pack","ref":"","precio":"","activo":"SI"},{"id":"p271","proveedor":"ENVAPRO","seccion":"","producto":"Cont porex CH (171P1476)","unidad":"","habitual":"1/2 pack","ref":"","precio":"","activo":"SI"},{"id":"p272","proveedor":"ENVAPRO","seccion":"","producto":"Ensaladera pet (225EV0514P)","unidad":"","habitual":"1/2 pa","ref":"","precio":"","activo":"SI"},{"id":"p273","proveedor":"ENVAPRO","seccion":"","producto":"Comandero 3617708 (doble)","unidad":"","habitual":"5","ref":"","precio":"","activo":"SI"},{"id":"p274","proveedor":"ENVAPRO","seccion":"","producto":"Plato carton (92BE02P)","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p275","proveedor":"ENVAPRO","seccion":"","producto":"Servilleta CH (153PN232207)","unidad":"","habitual":"5 pack","ref":"","precio":"","activo":"SI"},{"id":"p276","proveedor":"ENVAPRO","seccion":"","producto":"VASO CARTÓN EFECTO KRAFT 12-14 oz","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p277","proveedor":"ENVAPRO","seccion":"","producto":"VASO TÉRMICO POREX BLA 7 oz 200 ml","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p278","proveedor":"ENVAPRO","seccion":"","producto":"TAPA PLANA PLÁST VASO TÉRMICO 7oz","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p279","proveedor":"ENVAPRO","seccion":"","producto":"PERGAMINO ANTIGRAS 31X28 89R2831B","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p280","proveedor":"ENVAPRO","seccion":"","producto":"pajitas","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"},{"id":"p281","proveedor":"VARIOS","seccion":"","producto":"Bayeta punto azul plancha (amazon)","unidad":"","habitual":"","ref":"","precio":"","activo":"SI"}]};
-let cat = store.get('pp.cat', null);
-if (!cat || !cat.proveedores || !cat.proveedores.length) cat = Object.assign({ultimos:{}, actualizado:null}, CATALOGO_BASE);
+/* ---------- estado ---------- */
+let cat = store.get('pp.cat3', null);
+if (!cat || !cat.proveedores || !cat.proveedores.length) cat = Object.assign({ultimos:{}}, CATALOGO_BASE);
 let drafts = store.get('pp.drafts', {});
 let cola = store.get('pp.cola', []);
-let ui = {vista:'inicio', dia:hoyCod(), prov:null, entrega:'', buscar:'', solo:false};
-let syncState = {cls:'', txt:''};
+let ui = {vista:'inicio', prov:null, entrega:'', buscar:'', solo:false};
 
-(function limpiar(){
-  const lim = new Date(); lim.setDate(lim.getDate()-10);
-  const corte = lim.toISOString().slice(0,10);
-  for (const k of Object.keys(drafts)) if (k.slice(0,10) < corte) delete drafts[k];
-  store.set('pp.drafts', drafts);
-})();
+(function(){ const l = new Date(); l.setDate(l.getDate()-10); const c = l.toISOString().slice(0,10);
+  for (const k of Object.keys(drafts)) if (k.slice(0,10) < c) delete drafts[k]; store.set('pp.drafts', drafts); })();
 
-const provs = () => (cat && cat.proveedores) || [];
-const prodsDe = nombre => ((cat && cat.productos) || []).filter(p => p.proveedor === nombre);
-const provPorNombre = n => provs().find(p => p.proveedor === n);
-const entregasDe = p => lista(p.entregas);
-const dkey = (prov, ent) => hoyISO()+'|'+prov+'|'+(ent||'');
-const draft = (prov, ent) => drafts[dkey(prov, ent)] || (drafts[dkey(prov, ent)] = {q:{}, enviado:null});
-const guardar = () => store.set('pp.drafts', drafts);
-function lineas(prov, ent){ const d = drafts[dkey(prov, ent)]; return d ? Object.values(d.q).filter(v => v > 0).length : 0; }
-function totalLineas(p){ const es = entregasDe(p); return (es.length ? es : ['']).reduce((s,e) => s + lineas(p.proveedor, e), 0); }
-function enviado(p){ const es = entregasDe(p); let t = null; for (const e of (es.length ? es : [''])){ const d = drafts[dkey(p.proveedor, e)]; if (d && d.enviado && (!t || d.enviado > t)) t = d.enviado; } return t; }
+const provs = () => cat.proveedores;
+const prods = n => cat.productos.filter(p => p.proveedor === n);
+const prov = n => provs().find(p => p.proveedor === n);
+const color = n => COLORES[Math.max(0, provs().findIndex(p => p.proveedor === n)) % COLORES.length];
+const entregas = p => dias(p.entregas);
+const dk = (n, e) => hoyISO()+'|'+n+'|'+(e||'');
+const draft = (n, e) => drafts[dk(n, e)] || (drafts[dk(n, e)] = {q:{}, enviado:null});
+const save = () => store.set('pp.drafts', drafts);
+const nLin = (n, e) => { const d = drafts[dk(n, e)]; return d ? Object.values(d.q).filter(v => v > 0).length : 0; };
+const ents = p => entregas(p).length ? entregas(p) : [''];
+const total = p => ents(p).reduce((s,e) => s + nLin(p.proveedor, e), 0);
+const enviado = p => ents(p).map(e => (drafts[dk(p.proveedor, e)]||{}).enviado).filter(Boolean).sort().pop() || null;
 
-/* ===== Conexión con la hoja ===== */
+/* ---------- hoja de Google (en segundo plano, sin avisos) ---------- */
 async function llamar(body){
-  const r = await fetch(cfg.url, {method:'POST', body: JSON.stringify(Object.assign({clave: cfg.clave}, body))});
-  if (!r.ok) throw new Error('La hoja respondió con error '+r.status);
-  const j = await r.json();
-  if (!j.ok) throw new Error(j.error || 'Error de la hoja');
-  return j;
+  const r = await fetch(URL_HOJA, {method:'POST', body: JSON.stringify(body)});
+  const j = await r.json(); if (!j.ok) throw new Error(j.error || 'error'); return j;
 }
-function setSync(cls, txt){ syncState = {cls, txt}; const el = $('#sync'); if (el){ el.className = 'sync '+cls; el.lastElementChild.textContent = txt; } }
-async function cargarCatalogo(aviso){
-  if (!cfg.url){ setSync('warn','Sin conectar'); return; }
+async function sincronizar(){
   try {
     const j = await llamar({accion:'catalogo'});
-    if (j.proveedores && j.proveedores.length){
-      cat = {proveedores:j.proveedores, productos:j.productos, ultimos:j.ultimos||{}, actualizado:j.actualizado};
-      store.set('pp.cat', cat);
-      setSync('ok', 'Al día · '+horaCorta(cat.actualizado));
-      if (aviso) toast('Productos actualizados desde la hoja');
-    } else {
-      cat.ultimos = j.ultimos || cat.ultimos || {};
-      setSync('ok', 'Conectado');
-      if (aviso) toast('La hoja no tiene lista propia; se usa la incluida en la app');
-    }
+    if (j.proveedores && j.proveedores.length){ cat = {proveedores:j.proveedores, productos:j.productos, ultimos:j.ultimos||{}}; store.set('pp.cat3', cat); }
+    else cat.ultimos = j.ultimos || {};
     render();
-  } catch(e){
-    setSync('warn', 'Sin conexión con la hoja');
-    if (aviso) toast('No se pudo leer la hoja: '+e.message);
-  }
-  vaciarCola();
-}
-async function vaciarCola(){
-  if (!cfg.url || !cola.length) return;
-  for (const ped of [...cola]){
-    try { await llamar(ped); cola = cola.filter(x => x.pedido !== ped.pedido); store.set('pp.cola', cola); }
-    catch(e){ setSync('warn', cola.length+' pedido(s) pendientes de guardar en la hoja'); return; }
+  } catch(e){}
+  for (const p of [...cola]){
+    try { await llamar(p); cola = cola.filter(x => x.pedido !== p.pedido); store.set('pp.cola', cola); } catch(e){ break; }
   }
 }
-window.addEventListener('online', () => vaciarCola());
+window.addEventListener('online', sincronizar);
 
-/* ===== Pintar ===== */
-const ICON_GEAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
-const ICON_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+/* ---------- pintar ---------- */
+const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+const WA = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 2s.8 2.3.9 2.5c.1.2 1.6 2.5 4 3.5 1.5.6 2 .7 2.8.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.2-.2-.4-.3z"/></svg>';
 
 function render(){
-  const hoy = new Date();
-  const fecha = NOMBRE_DIA[COD_JS[hoy.getDay()]]+' '+hoy.getDate()+' '+hoy.toLocaleDateString('es-ES',{month:'short'}).replace('.','');
-  const atras = ui.vista === 'prov' ? `<button class="iconbtn" data-act="volver" aria-label="Volver a proveedores">${ICON_BACK}<span>Proveedores</span></button>` : '';
-  $('#topbar').innerHTML = `${atras}
-    <p class="brand">Pedidos<small>${esc(cfg.local||'')} · ${esc(fecha)}</small></p>
-    <span class="spacer"></span>
-    <span id="sync" class="sync ${syncState.cls}"><i></i><span>${esc(syncState.txt)}</span></span>
-    <button class="iconbtn" data-act="ajustes" aria-label="Ajustes">${ICON_GEAR}</button>`;
-  if (ui.vista === 'prov' && provPorNombre(ui.prov)) renderProv(); else { ui.vista = 'inicio'; renderInicio(); }
+  const h = new Date();
+  const fecha = cap(DIA[COD[h.getDay()]])+' '+h.getDate()+' '+h.toLocaleDateString('es-ES',{month:'long'});
+  $('#top').innerHTML = ui.vista === 'prov'
+    ? `<button class="back" data-act="volver">${BACK}Proveedores</button><span class="date">${esc(fecha)}</span>`
+    : `<h1 class="title">Pedidos</h1><span class="date">${esc(fecha)}</span>`;
+  if (ui.vista === 'prov' && prov(ui.prov)) pintarProv(); else { ui.vista = 'inicio'; pintarInicio(); }
 }
 
-function tileHTML(p){
-  const n = totalLineas(p), env = enviado(p), es = entregasDe(p);
-  let estado = 'Sin empezar';
-  if (env) estado = 'Enviado a las '+horaCorta(env);
-  else if (n) estado = n+(n === 1 ? ' producto' : ' productos');
-  const meta = [p.contacto, es.length ? 'entrega '+es.map(e => NOMBRE_DIA[e]).join(' y ') : ''].filter(Boolean).join(' · ');
-  return `<button class="tile ${n && !env ? 'has' : ''} ${env ? 'sent' : ''}" data-act="abrir" data-prov="${esc(p.proveedor)}">
-    <span class="name">${esc(p.proveedor)}</span>
-    ${meta ? `<span class="meta">${esc(meta)}</span>` : ''}
-    <span class="state">${esc(estado)}</span></button>`;
+function estado(p){
+  const n = total(p), env = enviado(p);
+  if (env) return {cls:'done', txt:'Enviado '+hm(env)};
+  if (n) return {cls:'part', txt:n+(n === 1 ? ' producto' : ' productos')};
+  return {cls:'', txt:'Pendiente'};
 }
 
-function renderInicio(){
-  $('#bottom').hidden = true;
-  if (!cat || !provs().length){
-    $('#main').innerHTML = `<div class="welcome">
-      <h2>Conectando con tu hoja…</h2>
-      <p>La lista de proveedores y productos sale de tu Google Sheet. Hazlo una sola vez:</p>
-      <p>No se ha podido leer la hoja. Comprueba que hay internet y que en Apps Script has ejecutado <b>configurar</b> y publicado una <b>Nueva versión</b>.</p>
-      <div class="actions"><button class="btn primary" data-act="reintentar">Reintentar</button>
-      <button class="btn" data-act="demo" id="demoBtn" hidden>Probar con datos de ejemplo</button></div></div>`;
-    fetch('catalogo.json').then(r => r.ok && ($('#demoBtn') && ($('#demoBtn').hidden = false))).catch(()=>{});
-    return;
-  }
-  const todos = provs();
-  const pend = todos.filter(p => totalLineas(p) && !enviado(p)).length;
-  const env = todos.filter(p => enviado(p)).length;
-  const resumen = [pend ? pend+' a medias' : '', env ? env+' enviados' : ''].filter(Boolean).join(' · ');
+function pintarInicio(){
+  $('#bar').hidden = true;
+  const ps = provs();
+  const env = ps.filter(p => enviado(p)).length, part = ps.filter(p => total(p) && !enviado(p)).length;
   $('#main').innerHTML = `
-    <h2 class="sec">Proveedores<span>${esc(resumen)}</span></h2>
-    <div class="grid">${todos.map(tileHTML).join('')}</div>
-    <div style="height:40px"></div>`;
-}
-
-function renderProv(){
-  const p = provPorNombre(ui.prov);
-  const es = entregasDe(p);
-  if (es.length && !es.includes(ui.entrega)) ui.entrega = es[0];
-  if (!es.length) ui.entrega = '';
-  const d = draft(p.proveedor, ui.entrega);
-  const ult = (cat.ultimos || {})[p.proveedor+'|'+(ui.entrega ? NOMBRE_DIA[ui.entrega] : '')];
-  const contacto = [p.contacto, p.telefono].filter(Boolean).join(' · ');
-  $('#main').innerHTML = `
-    <div class="provhead"><h1>${esc(p.proveedor)}</h1>${contacto ? `<span class="contact">${esc(contacto)}</span>` : ''}</div>
-    ${p.nota ? `<div class="note">${esc(p.nota)}</div>` : ''}
-    ${es.length > 1 ? `<div class="seg" role="group" aria-label="Día de entrega"><span class="lbl">Entrega</span>${es.map(e => `<button data-act="entrega" data-e="${e}" aria-pressed="${e===ui.entrega}">${NOMBRE_DIA[e][0].toUpperCase()+NOMBRE_DIA[e].slice(1)} ${fechaCorta(proximaFecha(e))}${lineas(p.proveedor,e) ? ' · '+lineas(p.proveedor,e) : ''}</button>`).join('')}</div>` : ''}
-    <div class="tools">
-      <input class="search" id="buscar" type="search" placeholder="Buscar producto" value="${esc(ui.buscar)}" autocomplete="off">
-      <button class="btn" data-act="habituales">Poner habituales</button>
-      <button class="btn" data-act="repetir" ${ult && ult.items.length ? '' : 'disabled'}>Repetir último</button>
-      <button class="btn" data-act="solo" aria-pressed="${ui.solo}">Solo lo pedido</button>
-      <button class="btn danger" data-act="vaciar">Vaciar</button>
+    <div class="summary">
+      <span class="pill"><i></i>${ps.length} proveedores</span>
+      ${part ? `<span class="pill part"><i></i>${part} a medias</span>` : ''}
+      ${env ? `<span class="pill done"><i></i>${env} enviados</span>` : ''}
     </div>
-    <div class="list">${listaHTML(p, d)}</div>`;
-  renderBottom();
+    <div class="grid">${ps.map(p => { const e = estado(p); const sub = [p.contacto, entregas(p).length ? 'entrega '+entregas(p).map(x => DIA[x]).join(' y ') : ''].filter(Boolean).join(' · ');
+      return `<button class="prov" data-act="abrir" data-prov="${esc(p.proveedor)}">
+        <span class="avatar" style="--c:${color(p.proveedor)}">${esc(iniciales(p.proveedor))}</span>
+        <span class="txt"><span class="name">${esc(bonito(p.proveedor))}</span>${sub ? `<span class="sub" style="display:block">${esc(sub)}</span>` : ''}</span>
+        <span class="status ${e.cls}">${esc(e.txt)}</span></button>`; }).join('')}</div>`;
 }
 
-function listaHTML(p, d){
-  const q = sinTildes(ui.buscar.trim());
-  let items = prodsDe(p.proveedor);
-  if (q) items = items.filter(x => sinTildes(x.producto).includes(q));
-  if (ui.solo) items = items.filter(x => d.q[x.id] > 0);
+function filas(p, d){
+  const q = plano(ui.buscar.trim());
+  let its = prods(p.proveedor);
+  if (q) its = its.filter(x => plano(x.producto).includes(q));
+  if (ui.solo) its = its.filter(x => d.q[x.id] > 0);
+  if (!its.length) return `<p class="empty">${ui.solo ? 'Todavía no has añadido nada.' : q ? 'No hay ningún producto con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos.'}</p>`;
   let html = '', sec = null;
-  for (const x of items){
+  for (const x of its){
     if (x.seccion && x.seccion !== sec){ sec = x.seccion; html += `<h3>${esc(sec)}</h3>`; }
-    const v = d.q[x.id] || 0, u = unidadDe(x);
-    const hab = x.habitual ? `<button class="chip" data-act="hab" data-id="${esc(x.id)}" ${parseHabitual(x.habitual) ? '' : 'disabled'}>Habitual: ${esc(x.habitual)}</button>` : '';
-    const pack = /^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : '';
+    const v = d.q[x.id] || 0, u = unidad(x), hn = habNum(x.habitual);
     html += `<div class="row ${v ? 'on' : ''}" data-id="${esc(x.id)}">
-      <div class="txt"><div class="pn">${esc(x.producto)}</div><div class="hint">${u && !x.habitual ? `<span>${esc(u)}</span>` : ''}${pack}${hab}${x.ref ? `<span>Ref ${esc(x.ref)}</span>` : ''}</div></div>
-      <div class="stepper"><button data-act="menos" data-id="${esc(x.id)}" aria-label="Quitar uno de ${esc(x.producto)}">−</button>
-      <button class="q" data-act="teclado" data-id="${esc(x.id)}" aria-label="Cantidad de ${esc(x.producto)}: ${fmtQ(v)}">${fmtQ(v)}</button>
-      <button class="plus" data-act="mas" data-id="${esc(x.id)}" aria-label="Añadir uno de ${esc(x.producto)}">+</button></div></div>`;
+      <div class="txt"><div class="pn">${esc(cap(x.producto))}</div>
+        <div class="hint">${x.habitual ? `<button class="hab" data-act="hab" data-id="${esc(x.id)}" ${hn ? '' : 'disabled'}>Habitual ${esc(x.habitual)}</button>` : (u ? `<span>${esc(u)}</span>` : '')}${/^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : ''}</div></div>
+      <div class="stepper">
+        <button class="minus" data-act="menos" data-id="${esc(x.id)}" aria-label="Quitar uno">−</button>
+        <button class="q" data-act="teclado" data-id="${esc(x.id)}" aria-label="Escribir cantidad">${fmtQ(v)}</button>
+        <button class="plus" data-act="mas" data-id="${esc(x.id)}" aria-label="Añadir uno">+</button>
+      </div></div>`;
   }
-  if (!items.length) html = `<p class="empty">${ui.solo ? 'Todavía no has puesto nada en este pedido.' : q ? 'Ningún producto coincide con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos. Añádelos en la pestaña APP_Productos.'}</p>`;
   return html;
 }
 
-function renderBottom(){
-  const p = provPorNombre(ui.prov);
-  const es = entregasDe(p);
-  const n = totalLineas(p), env = enviado(p);
-  const sub = env ? 'Enviado a las '+horaCorta(env)+(n ? ' · puedes reenviarlo' : '') : es.length > 1 ? es.map(e => NOMBRE_DIA[e]+': '+lineas(p.proveedor,e)).join(' · ') : 'Pedido de hoy';
-  $('#bottom').hidden = false;
-  $('#bottombar').innerHTML = `<div class="sum">${n} ${n === 1 ? 'producto' : 'productos'}<small>${esc(sub)}</small></div>
-    <span class="spacer"></span>
-    <button class="btn primary" data-act="revisar" ${n ? '' : 'disabled'}>Revisar y enviar</button>`;
+function pintarProv(){
+  const p = prov(ui.prov), es = entregas(p);
+  if (!es.includes(ui.entrega)) ui.entrega = es[0] || '';
+  const d = draft(p.proveedor, ui.entrega);
+  const ult = (cat.ultimos || {})[p.proveedor+'|'+(ui.entrega ? DIA[ui.entrega] : '')];
+  const sub = [p.contacto, p.telefono].filter(Boolean).join(' · ');
+  $('#main').innerHTML = `
+    <div class="head"><span class="avatar" style="--c:${color(p.proveedor)}">${esc(iniciales(p.proveedor))}</span>
+      <div><h1>${esc(bonito(p.proveedor))}</h1>${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div></div>
+    ${p.nota ? `<div class="note">${esc(p.nota)}</div>` : ''}
+    ${es.length > 1 ? `<div class="tabs" role="group" aria-label="Día de entrega">${es.map(e => `<button data-act="entrega" data-e="${e}" aria-pressed="${e===ui.entrega}">Entrega ${DIA[e]} ${dm(proxima(e))}<span data-n="${e}">${nLin(p.proveedor,e) ? ' · '+nLin(p.proveedor,e) : ''}</span></button>`).join('')}</div>` : ''}
+    <div class="tools">
+      <input class="search" id="buscar" type="search" placeholder="Buscar" value="${esc(ui.buscar)}" autocomplete="off">
+      <button class="chipbtn" data-act="habituales">Poner habituales</button>
+      ${ult && ult.items && ult.items.length ? `<button class="chipbtn" data-act="repetir">Repetir último</button>` : ''}
+      <button class="chipbtn" data-act="solo" aria-pressed="${ui.solo}">Solo lo pedido</button>
+      <button class="chipbtn danger" data-act="vaciar">Vaciar</button>
+    </div>
+    <div class="list">${filas(p, d)}</div>`;
+  pintarBarra();
 }
 
-function refrescarFila(id){
-  const p = provPorNombre(ui.prov), d = draft(p.proveedor, ui.entrega), v = d.q[id] || 0;
-  const row = document.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
-  if (row){ row.classList.toggle('on', v > 0); const b = row.querySelector('.q'); b.textContent = fmtQ(v); }
-  const es = entregasDe(p);
-  if (es.length > 1){ const b = document.querySelector(`.seg [data-e="${ui.entrega}"]`); if (b){ const l = lineas(p.proveedor, ui.entrega); b.textContent = NOMBRE_DIA[ui.entrega][0].toUpperCase()+NOMBRE_DIA[ui.entrega].slice(1)+' '+fechaCorta(proximaFecha(ui.entrega))+(l ? ' · '+l : ''); } }
-  renderBottom();
+function pintarBarra(){
+  const p = prov(ui.prov), n = total(p), env = enviado(p), es = entregas(p);
+  const s = env ? 'Enviado a las '+hm(env) : es.length > 1 ? es.map(e => cap(DIA[e])+': '+nLin(p.proveedor,e)).join(' · ') : 'Pedido de hoy';
+  $('#bar').hidden = false;
+  $('#barin').innerHTML = `<div><div class="n">${n} ${n === 1 ? 'producto' : 'productos'}</div><div class="s">${esc(s)}</div></div>
+    <button class="send" data-act="revisar" ${n ? '' : 'disabled'}>Revisar y enviar</button>`;
 }
+
 function setQ(id, v){
-  const p = provPorNombre(ui.prov), d = draft(p.proveedor, ui.entrega);
+  const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);
   v = Math.max(0, Math.round(v * 100) / 100);
   if (v) d.q[id] = v; else delete d.q[id];
-  guardar(); refrescarFila(id);
+  save();
+  const row = document.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
+  if (row){ row.classList.toggle('on', v > 0); row.querySelector('.q').textContent = fmtQ(v); }
+  const t = document.querySelector(`[data-n="${ui.entrega}"]`); if (t){ const l = nLin(p.proveedor, ui.entrega); t.textContent = l ? ' · '+l : ''; }
+  pintarBarra();
 }
 
-/* ===== Teclado de cantidades ===== */
-function abrirTeclado(id){
-  const x = prodsDe(ui.prov).find(p => p.id === id); if (!x) return;
-  const d = draft(ui.prov, ui.entrega);
-  let ent = '', frac = 0, tocado = false;
-  const ini = d.q[id] || 0;
-  const valor = () => tocado ? (parseInt(ent || '0', 10) + frac) : ini;
-  const pinta = () => { $('#kout').textContent = fmtQ(valor()); };
-  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="kt" onclick="event.stopPropagation()">
-    <h2 id="kt">${esc(x.producto)}</h2>
-    <div class="keyout" id="kout">${fmtQ(ini)}</div>
-    <div class="keyunit">${esc([unidadDe(x), x.habitual ? 'habitual '+x.habitual : ''].filter(Boolean).join(' · '))}</div>
+/* ---------- teclado ---------- */
+function teclado(id){
+  const x = prods(ui.prov).find(p => p.id === id); if (!x) return;
+  const ini = draft(ui.prov, ui.entrega).q[id] || 0;
+  let ent = '', fr = 0, toc = false;
+  const val = () => toc ? parseInt(ent || '0', 10) + fr : ini;
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="kt">
+    <h2 id="kt">${esc(cap(x.producto))}</h2>
+    <div class="kout" id="kout">${fmtQ(ini)}</div>
+    <div class="kunit">${esc([unidad(x), x.habitual ? 'habitual '+x.habitual : ''].filter(Boolean).join(' · '))}</div>
     <div class="keys">
-      ${[7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="frac" data-f="0.25">¼</button>
-      ${[4,5,6].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="frac" data-f="0.5">½</button>
-      ${[1,2,3].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button class="frac" data-f="0.75">¾</button>
-      <button data-k="0">0</button><button data-k="del" aria-label="Borrar">⌫</button><button class="ok wide" data-k="ok">Listo</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="fr" data-f="0.25">¼</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="fr" data-f="0.5">½</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="fr" data-f="0.75">¾</button>
+      <button data-k="0">0</button><button data-k="del" aria-label="Borrar">⌫</button><button class="ok" data-k="ok">Listo</button>
     </div>
-    <div class="actions"><button class="btn danger" data-k="cero">Quitar del pedido</button><button class="btn" data-k="cancel">Cancelar</button></div>
+    <div class="row2"><button data-k="cancel">Cancelar</button><button class="danger" data-k="cero">Quitar</button></div>
   </div></div>`;
   $('#modal .dlg').addEventListener('click', e => {
+    e.stopPropagation();
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.f){ if (!tocado){ ent=''; tocado = true; } frac = frac === +b.dataset.f ? 0 : +b.dataset.f; pinta(); return; }
-    const k = b.dataset.k;
-    if (k === 'ok'){ setQ(id, valor()); cerrar(); return; }
-    if (k === 'cero'){ setQ(id, 0); cerrar(); return; }
-    if (k === 'cancel'){ cerrar(); return; }
-    if (k === 'del'){ tocado = true; if (frac) frac = 0; else ent = ent.slice(0,-1); pinta(); return; }
-    if (k != null){ if (!tocado){ ent=''; frac=0; tocado = true; } if (ent.length < 4) ent = (ent === '0' ? '' : ent) + k; pinta(); }
+    if (b.dataset.f){ if (!toc){ ent = ''; toc = true; } fr = fr === +b.dataset.f ? 0 : +b.dataset.f; }
+    else { const k = b.dataset.k;
+      if (k === 'ok'){ setQ(id, val()); return cerrar(); }
+      if (k === 'cero'){ setQ(id, 0); return cerrar(); }
+      if (k === 'cancel') return cerrar();
+      if (k === 'del'){ toc = true; if (fr) fr = 0; else ent = ent.slice(0,-1); }
+      else { if (!toc){ ent = ''; fr = 0; toc = true; } if (ent.length < 4) ent = (ent === '0' ? '' : ent) + k; } }
+    $('#kout').textContent = fmtQ(val());
   });
 }
-function cerrar(){ $('#modal').innerHTML = ''; }
+const cerrar = () => { $('#modal').innerHTML = ''; };
 
-/* ===== Revisar y enviar ===== */
-function textoPedido(p){
-  const es = entregasDe(p), partes = [];
-  for (const e of (es.length ? es : [''])){
-    const d = drafts[dkey(p.proveedor, e)]; if (!d) continue;
-    const its = prodsDe(p.proveedor).filter(x => d.q[x.id] > 0);
-    if (!its.length) continue;
-    const cab = e ? `*Entrega ${NOMBRE_DIA[e]} ${fechaCorta(proximaFecha(e))}*\n` : '';
-    partes.push(cab + its.map(x => { const u = unidadDe(x); return `- ${x.producto}: ${fmtQ(d.q[x.id])}${u ? ' '+u : ''}`; }).join('\n'));
+/* ---------- enviar ---------- */
+function texto(p){
+  const partes = [];
+  for (const e of ents(p)){
+    const d = drafts[dk(p.proveedor, e)]; if (!d) continue;
+    const its = prods(p.proveedor).filter(x => d.q[x.id] > 0); if (!its.length) continue;
+    partes.push((e ? `*Entrega ${DIA[e]} ${dm(proxima(e))}*\n` : '') + its.map(x => { const u = unidad(x); return `- ${cap(x.producto)}: ${fmtQ(d.q[x.id])}${u ? ' '+u : ''}`; }).join('\n'));
   }
-  const saludo = p.contacto ? `Hola ${p.contacto.split(' ')[0]}, ` : 'Hola, ';
-  const hoy = new Date();
-  return `${saludo}pedido de ${cfg.local || 'nuestro local'} (${NOMBRE_DIA[COD_JS[hoy.getDay()]]} ${fechaCorta(hoy)}):\n\n${partes.join('\n\n')}\n\nGracias`;
+  const h = new Date();
+  return `${p.contacto ? 'Hola '+p.contacto.split(' ')[0]+', ' : 'Hola, '}pedido de ${LOCAL} (${DIA[COD[h.getDay()]]} ${dm(h)}):\n\n${partes.join('\n\n')}\n\nGracias`;
 }
-function abrirRevisar(){
-  const p = provPorNombre(ui.prov);
-  const wa = String(p.whatsapp||'').replace(/\D/g,'');
-  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rt" onclick="event.stopPropagation()">
-    <h2 id="rt">Pedido a ${esc(p.proveedor)}</h2>
-    <p class="muted">${wa ? 'Se abrirá WhatsApp con este mensaje. Puedes cambiar el texto antes.' : 'Este proveedor no tiene WhatsApp en la hoja. Copia el texto o guarda el pedido.'}</p>
-    <div class="field"><label for="msg">Mensaje</label><textarea id="msg">${esc(textoPedido(p))}</textarea></div>
-    <div class="actions">
-      ${wa ? `<button class="btn primary" data-r="wa">Enviar por WhatsApp</button>` : ''}
-      <button class="btn" data-r="copiar">Copiar texto</button>
-      <button class="btn" data-r="guardar">${wa ? 'Guardar sin enviar' : 'Guardar pedido'}</button>
+function revisar(){
+  const p = prov(ui.prov), wa = String(p.whatsapp||'').replace(/\D/g,'');
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rt">
+    <h2 id="rt">Pedido a ${esc(bonito(p.proveedor))}</h2>
+    <p class="muted">${wa ? 'Puedes cambiar el texto antes de enviarlo.' : 'Este proveedor no tiene WhatsApp. Copia el texto y mándalo como sueles.'}</p>
+    <textarea class="msg" id="msg" aria-label="Mensaje del pedido">${esc(texto(p))}</textarea>
+    <div class="acts">
+      ${wa ? `<button class="wa" data-r="wa">${WA}Enviar por WhatsApp</button>` : ''}
+      <button data-r="copiar">Copiar texto</button>
+      <button data-r="hecho">${wa ? 'Marcar como enviado sin WhatsApp' : 'Marcar como enviado'}</button>
     </div></div></div>`;
   $('#modal .dlg').addEventListener('click', async e => {
+    e.stopPropagation();
     const b = e.target.closest('button[data-r]'); if (!b) return;
-    const txt = $('#msg').value;
+    const t = $('#msg').value;
     if (b.dataset.r === 'copiar'){
-      try { await navigator.clipboard.writeText(txt); toast('Texto copiado'); }
-      catch(err){ $('#msg').select(); toast('Selecciona el texto y cópialo'); }
+      try { await navigator.clipboard.writeText(t); toast('Texto copiado'); } catch(err){ $('#msg').select(); toast('Selecciona el texto y cópialo'); }
       return;
     }
-    if (b.dataset.r === 'wa'){
-      window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(txt), '_blank');
-      registrar(p, true);
-      toast('Pedido abierto en WhatsApp y guardado');
-    } else {
-      registrar(p, false);
-      toast('Pedido guardado');
-    }
-    cerrar(); render();
+    if (b.dataset.r === 'wa') window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(t), '_blank');
+    registrar(p); cerrar(); render();
+    toast(b.dataset.r === 'wa' ? 'Pedido abierto en WhatsApp' : 'Pedido marcado como enviado');
   });
 }
-function registrar(p, marcarEnviado){
-  const es = entregasDe(p), ahora = new Date().toISOString();
-  for (const e of (es.length ? es : [''])){
-    const d = drafts[dkey(p.proveedor, e)]; if (!d) continue;
-    const its = prodsDe(p.proveedor).filter(x => d.q[x.id] > 0);
-    if (!its.length) continue;
+function registrar(p){
+  const ahora = new Date().toISOString();
+  for (const e of ents(p)){
+    const d = drafts[dk(p.proveedor, e)]; if (!d) continue;
+    const its = prods(p.proveedor).filter(x => d.q[x.id] > 0); if (!its.length) continue;
     d.enviado = ahora;
-    cola.push({accion:'pedido', pedido: p.proveedor.replace(/\W+/g,'').slice(0,12)+'-'+(e||'U')+'-'+Date.now().toString(36), ts: ahora,
-      proveedor: p.proveedor, entrega: e ? NOMBRE_DIA[e] : '', dispositivo: cfg.dispositivo || '',
-      items: its.map(x => ({id:x.id, producto:x.producto, cantidad:d.q[x.id], unidad:unidadDe(x)}))});
+    cola.push({accion:'pedido', pedido:p.proveedor.replace(/\W+/g,'').slice(0,12)+'-'+(e||'U')+'-'+Date.now().toString(36), ts:ahora,
+      proveedor:p.proveedor, entrega:e ? DIA[e] : '', dispositivo:'Tablet',
+      items:its.map(x => ({id:x.id, producto:x.producto, cantidad:d.q[x.id], unidad:unidad(x)}))});
   }
-  guardar(); store.set('pp.cola', cola);
-  vaciarCola().then(() => { if (!cola.length) setSync('ok', 'Pedido guardado en la hoja'); });
+  save(); store.set('pp.cola', cola); sincronizar();
 }
 
-/* ===== Ajustes ===== */
-function abrirAjustes(){
-  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="at" onclick="event.stopPropagation()">
-    <h2 id="at">Ajustes</h2>
-    <p class="muted">Estos datos se guardan solo en esta tablet.</p>
-    <div class="field"><label for="f-url">URL de la hoja (termina en /exec)</label><input id="f-url" type="url" inputmode="url" value="${esc(cfg.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
-    <div class="field"><label for="f-local">Nombre del local (sale en el mensaje)</label><input id="f-local" type="text" value="${esc(cfg.local)}"></div>
-    <div class="field"><label for="f-disp">Nombre de este dispositivo</label><input id="f-disp" type="text" value="${esc(cfg.dispositivo)}"></div>
-    <p class="muted" style="margin-top:12px">${cat && cat.actualizado ? 'Productos actualizados a las '+horaCorta(cat.actualizado)+'. ' : 'Usando la lista incluida en la app. '}${cola.length ? cola.length+' pedido(s) esperando a guardarse en la hoja.' : ''}</p>
-    <div class="actions"><button class="btn primary" data-a="guardar">Guardar y conectar</button><button class="btn" data-a="refrescar">Actualizar productos</button><button class="btn" data-a="cerrar">Cerrar</button></div>
-  </div></div>`;
-  $('#modal .dlg').addEventListener('click', e => {
-    const b = e.target.closest('button[data-a]'); if (!b) return;
-    if (b.dataset.a === 'guardar'){
-      cfg = {url:$('#f-url').value.trim(), clave:cfg.clave||'', local:$('#f-local').value.trim(), dispositivo:$('#f-disp').value.trim()};
-      store.set('pp.cfg', cfg); cerrar(); cargarCatalogo(true);
-    } else if (b.dataset.a === 'refrescar'){ cerrar(); cargarCatalogo(true); }
-    else cerrar();
-  });
-}
-
-/* ===== Eventos ===== */
+/* ---------- eventos ---------- */
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-act]'); if (!b) return;
   const a = b.dataset.act, id = b.dataset.id;
   if (a === 'cerrar'){ if (e.target === b) cerrar(); return; }
-  if (a === 'ajustes') return abrirAjustes();
-  if (a === 'reintentar') return cargarCatalogo(true);
-  if (a === 'volver'){ ui.vista = 'inicio'; ui.buscar=''; ui.solo=false; render(); window.scrollTo(0,0); return; }
-  if (a === 'abrir'){ ui.vista = 'prov'; ui.prov = b.dataset.prov; ui.entrega=''; ui.buscar=''; ui.solo=false; render(); window.scrollTo(0,0); return; }
-  if (a === 'demo'){ fetch('catalogo.json').then(r => r.json()).then(j => { cat = Object.assign({ultimos:{}, actualizado:new Date().toISOString()}, j); store.set('pp.cat', cat); setSync('warn','Datos de ejemplo'); render(); }); return; }
+  if (a === 'volver'){ ui.vista = 'inicio'; ui.buscar = ''; ui.solo = false; render(); scrollTo(0,0); return; }
+  if (a === 'abrir'){ ui = {vista:'prov', prov:b.dataset.prov, entrega:'', buscar:'', solo:false}; render(); scrollTo(0,0); return; }
   if (ui.vista !== 'prov') return;
-  const p = provPorNombre(ui.prov), d = draft(p.proveedor, ui.entrega);
-  if (a === 'mas'){ const v = d.q[id] || 0; setQ(id, v < 1 && v > 0 ? 1 : v + 1); }
+  const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);
+  if (a === 'mas'){ const v = d.q[id] || 0; setQ(id, v > 0 && v < 1 ? 1 : v + 1); }
   else if (a === 'menos'){ const v = d.q[id] || 0; setQ(id, v > 1 ? v - 1 : 0); }
-  else if (a === 'teclado') abrirTeclado(id);
-  else if (a === 'hab'){ const x = prodsDe(p.proveedor).find(z => z.id === id); const h = parseHabitual(x.habitual); if (h) setQ(id, h); }
-  else if (a === 'entrega'){ ui.entrega = b.dataset.e; renderProv(); }
-  else if (a === 'solo'){ ui.solo = !ui.solo; renderProv(); }
+  else if (a === 'teclado') teclado(id);
+  else if (a === 'hab'){ const x = prods(p.proveedor).find(z => z.id === id); setQ(id, habNum(x.habitual)); }
+  else if (a === 'entrega'){ ui.entrega = b.dataset.e; pintarProv(); }
+  else if (a === 'solo'){ ui.solo = !ui.solo; pintarProv(); }
   else if (a === 'habituales'){
-    let n = 0; for (const x of prodsDe(p.proveedor)){ const h = parseHabitual(x.habitual); if (h && !d.q[x.id]){ d.q[x.id] = h; n++; } }
-    guardar(); renderProv(); toast(n ? 'Puestas '+n+' cantidades habituales. Ajusta lo que sobre.' : 'No hay habituales que poner');
+    let n = 0; for (const x of prods(p.proveedor)){ const h = habNum(x.habitual); if (h && !d.q[x.id]){ d.q[x.id] = h; n++; } }
+    save(); pintarProv(); toast(n ? n+' cantidades puestas. Ajusta lo que sobre.' : 'No hay cantidades habituales que poner');
   }
   else if (a === 'repetir'){
-    const ult = (cat.ultimos||{})[p.proveedor+'|'+(ui.entrega ? NOMBRE_DIA[ui.entrega] : '')];
-    if (!ult) return;
-    const ids = new Set(prodsDe(p.proveedor).map(x => x.id)); let n = 0;
-    for (const it of ult.items){ if (ids.has(it.id) && +it.cantidad > 0){ d.q[it.id] = +it.cantidad; n++; } }
-    guardar(); renderProv(); toast('Copiado el pedido del '+new Date(ult.fecha).toLocaleDateString('es-ES',{weekday:'long',day:'numeric'})+' ('+n+(n === 1 ? ' producto)' : ' productos)'));
+    const u = (cat.ultimos||{})[p.proveedor+'|'+(ui.entrega ? DIA[ui.entrega] : '')]; if (!u) return;
+    const ids = new Set(prods(p.proveedor).map(x => x.id)); let n = 0;
+    for (const it of u.items) if (ids.has(it.id) && +it.cantidad > 0){ d.q[it.id] = +it.cantidad; n++; }
+    save(); pintarProv(); toast('Copiado el último pedido ('+n+(n === 1 ? ' producto)' : ' productos)'));
   }
   else if (a === 'vaciar'){
-    if (b.dataset.confirm){ d.q = {}; d.enviado = null; guardar(); renderProv(); toast('Pedido vaciado'); }
-    else { b.dataset.confirm = '1'; b.textContent = '¿Seguro? Pulsa otra vez'; setTimeout(() => { if (b.isConnected){ delete b.dataset.confirm; b.textContent = 'Vaciar'; } }, 3000); }
+    if (b.dataset.ok){ d.q = {}; d.enviado = null; save(); pintarProv(); toast('Pedido vaciado'); }
+    else { b.dataset.ok = '1'; b.textContent = '¿Vaciar todo? Toca otra vez'; setTimeout(() => { if (b.isConnected){ delete b.dataset.ok; b.textContent = 'Vaciar'; } }, 3000); }
   }
-  else if (a === 'revisar') abrirRevisar();
+  else if (a === 'revisar') revisar();
 });
 document.addEventListener('input', e => {
-  if (e.target.id === 'buscar'){
-    ui.buscar = e.target.value;
-    const p = provPorNombre(ui.prov); $('.list').innerHTML = listaHTML(p, draft(p.proveedor, ui.entrega));
-  }
+  if (e.target.id !== 'buscar') return;
+  ui.buscar = e.target.value;
+  const p = prov(ui.prov); $('.list').innerHTML = filas(p, draft(p.proveedor, ui.entrega));
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal').innerHTML) cerrar(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
+let tt; function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(() => el.hidden = true, 3000); }
 
-let tt;
-function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(() => el.hidden = true, 3200); }
-
-/* ===== Arranque ===== */
-if (cat) setSync('', 'Copia guardada');
 render();
-cargarCatalogo(false);
-document.addEventListener('visibilitychange', () => { if (!document.hidden && cfg.url && (!cat || Date.now() - new Date(cat.actualizado).getTime() > 30*60*1000)) cargarCatalogo(false); });
+sincronizar();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
