@@ -21,15 +21,15 @@ const HOJA_PROV = 'APP_Proveedores';
 const HOJA_PROD = 'APP_Productos';
 const HOJA_PED = 'APP_Pedidos';
 
-const COL_PROV = ['Proveedor', 'Contacto', 'Teléfono', 'WhatsApp', 'Entregas', 'Nota'];
-const COL_PROD = ['ID', 'Proveedor', 'Sección', 'Producto', 'Unidad', 'Habitual', 'Ref', 'Precio', 'Activo'];
+const COL_PROV = ['Proveedor', 'Contacto', 'Teléfono', 'WhatsApp', 'Entregas', 'Nota', 'Activo'];
+const COL_PROD = ['ID', 'Proveedor', 'Sección', 'Producto', 'Unidad', 'Mínimo', 'Ref', 'Precio', 'Activo'];
 const COL_PED = ['Fecha', 'Hora', 'Entrega', 'Proveedor', 'Producto', 'Cantidad', 'Unidad', 'ID producto', 'Pedido', 'Dispositivo'];
 
 const CLAVES = {
   'Proveedor': 'proveedor', 'Contacto': 'contacto', 'Teléfono': 'telefono', 'WhatsApp': 'whatsapp',
   'Días de pedido': 'dias', 'Entregas': 'entregas', 'Nota': 'nota',
   'ID': 'id', 'Sección': 'seccion', 'Producto': 'producto', 'Unidad': 'unidad',
-  'Habitual': 'habitual', 'Ref': 'ref', 'Precio': 'precio', 'Activo': 'activo'
+  'Habitual': 'habitual', 'Mínimo': 'habitual', 'Minimo': 'habitual', 'Ref': 'ref', 'Precio': 'precio', 'Activo': 'activo'
 };
 
 /* ---------- API para la app ---------- */
@@ -102,13 +102,69 @@ function asegurarDatos() {
     if (h && h.getLastRow() < 2) ss.deleteSheet(h);
   });
   if (!ss.getSheetByName(HOJA_PROV) || !ss.getSheetByName(HOJA_PROD) || !ss.getSheetByName(HOJA_PED)) configurar();
+  ponerAlDia();
+}
+
+function reglaSiNo() {
+  return SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build();
+}
+
+function cabecera(hoja) {
+  return hoja.getRange(1, 1, 1, hoja.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim());
+}
+
+// Pone al día las pestañas creadas con versiones anteriores y pone ID a los productos nuevos.
+function ponerAlDia() {
+  const ss = SpreadsheetApp.getActive();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    // Proveedores: columna Activo (SI/NO) para quitarlos sin borrarlos
+    const hp = ss.getSheetByName(HOJA_PROV);
+    if (hp && cabecera(hp).indexOf('Activo') < 0) {
+      const col = hp.getLastColumn() + 1;
+      hp.getRange(1, col).setValue('Activo').setFontWeight('bold').setBackground('#1f5c45').setFontColor('#ffffff')
+        .setNote('NO = el proveedor deja de salir en la app sin borrarlo.');
+      if (hp.getLastRow() > 1) hp.getRange(2, col, hp.getLastRow() - 1, 1).setValue('SI');
+      hp.getRange(2, col, 1000, 1).setDataValidation(reglaSiNo());
+    }
+    const hd = ss.getSheetByName(HOJA_PROD);
+    if (!hd) return;
+    const cab = cabecera(hd);
+    // "Habitual" en la hoja es en realidad el mínimo que hay que tener
+    const iHab = cab.indexOf('Habitual');
+    if (iHab >= 0) hd.getRange(1, iHab + 1).setValue('Mínimo')
+      .setNote('Lo mínimo que hay que tener. Ej: 8, 1/2 pieza, 2 bote. Lo habitual lo calcula la app con los pedidos.');
+    // Productos sin ID (filas nuevas) o con el ID repetido (fila copiada): se les pone uno nuevo
+    const iId = cab.indexOf('ID'), iProd = cab.indexOf('Producto'), n = hd.getLastRow() - 1;
+    if (iId < 0 || iProd < 0 || n < 1) return;
+    const ids = hd.getRange(2, iId + 1, n, 1).getDisplayValues().map(f => String(f[0]).trim());
+    const nombres = hd.getRange(2, iProd + 1, n, 1).getDisplayValues().map(f => String(f[0]).trim());
+    let max = ids.reduce((m, v) => { const k = /^p(\d+)$/i.exec(v); return k ? Math.max(m, +k[1]) : m; }, 0);
+    const vistos = new Set();
+    let cambio = false;
+    const nuevos = ids.map((v, i) => {
+      if (nombres[i] && (!v || vistos.has(v))) { v = 'p' + String(++max).padStart(3, '0'); cambio = true; }
+      if (v) vistos.add(v);
+      return [v];
+    });
+    if (cambio) hd.getRange(2, iId + 1, n, 1).setValues(nuevos);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function leerCatalogo() {
   asegurarDatos();
-  const proveedores = leerTabla(HOJA_PROV).filter(p => p.proveedor);
+  const activo = x => String(x.activo || 'SI').trim().toUpperCase() !== 'NO';
+  const proveedores = leerTabla(HOJA_PROV).filter(p => p.proveedor && activo(p));
+  // El nombre del proveedor en productos se compara sin mayúsculas ni espacios de más
+  const clave = s => String(s).trim().replace(/\s+/g, ' ').toUpperCase();
+  const nombre = {};
+  proveedores.forEach(p => { nombre[clave(p.proveedor)] = p.proveedor; });
   const productos = leerTabla(HOJA_PROD)
-    .filter(p => p.producto && p.proveedor && String(p.activo || 'SI').toUpperCase() !== 'NO');
+    .filter(p => p.producto && p.proveedor && activo(p) && nombre[clave(p.proveedor)])
+    .map(p => Object.assign(p, { proveedor: nombre[clave(p.proveedor)] }));
   return { proveedores, productos, ultimos: ultimosPedidos(), actualizado: new Date().toISOString() };
 }
 
@@ -166,8 +222,10 @@ function configurar() {
   if (!ss.getSheetByName(HOJA_PROV)) {
     const h = hojaOCrear(HOJA_PROV, COL_PROV);
     h.getRange('D:D').setNumberFormat('@');
-    const filas = DATOS.proveedores.map(p => [p.proveedor, p.contacto, p.telefono, p.whatsapp, p.entregas, p.nota]);
+    const filas = DATOS.proveedores.map(p => [p.proveedor, p.contacto, p.telefono, p.whatsapp, p.entregas, p.nota, 'SI']);
     h.getRange(2, 1, filas.length, COL_PROV.length).setValues(filas);
+    h.getRange(2, 7, 1000, 1).setDataValidation(reglaSiNo());
+    h.getRange('G1').setNote('NO = el proveedor deja de salir en la app sin borrarlo.');
     h.setColumnWidth(1, 160); h.setColumnWidth(3, 200); h.setColumnWidth(6, 320);
     h.getRange('E1').setNote('Días de entrega si el pedido se reparte en varios (ej. M,V). Vacío = una sola entrega');
     h.getRange('D1').setNote('Número con prefijo 34 y sin espacios, ej. 34616272201. Vacío = sin WhatsApp');
@@ -180,10 +238,9 @@ function configurar() {
     const filas = DATOS.productos.map(p => [p.id, p.proveedor, p.seccion, p.producto, p.unidad, p.habitual, p.ref, p.precio, p.activo]);
     h.getRange(2, 1, filas.length, COL_PROD.length).setValues(filas);
     h.setColumnWidth(2, 150); h.setColumnWidth(4, 320);
-    const regla = SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build();
-    h.getRange(2, 9, 1000, 1).setDataValidation(regla);
-    h.getRange('A1').setNote('Para un producto nuevo, inventa un ID que no exista (ej. p500).');
-    h.getRange('F1').setNote('Cantidad habitual. Ej: 8, 1/2 pieza, 2 bote. La app la propone con un toque.');
+    h.getRange(2, 9, 1000, 1).setDataValidation(reglaSiNo());
+    h.getRange('A1').setNote('Para un producto nuevo deja el ID vacío: se pone solo al abrir la app.');
+    h.getRange('F1').setNote('Lo mínimo que hay que tener. Ej: 8, 1/2 pieza, 2 bote. Lo habitual lo calcula la app con los pedidos.');
     h.getRange('I1').setNote('NO = el producto deja de salir en la app sin borrarlo.');
     hechas.push(HOJA_PROD);
   }
