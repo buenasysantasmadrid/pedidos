@@ -77,7 +77,7 @@ button:disabled{cursor:default}
 .chipbtn{height:52px;padding:0 18px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);font-weight:700;font-size:16px;white-space:nowrap}
 .chipbtn[aria-pressed="true"]{background:var(--ink);color:#fff}
 .chipbtn.danger{color:var(--danger)}
-.list{display:grid;grid-template-columns:1fr;gap:8px;padding-bottom:130px}
+.list{display:grid;grid-template-columns:1fr;gap:8px;padding-bottom:16px}
 @media (min-width:920px){.list{grid-template-columns:1fr 1fr}}
 .list h3{grid-column:1/-1;margin:14px 0 2px;font:700 19px var(--display);color:var(--soft)}
 .row{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:18px;padding:10px 10px 10px 18px;min-height:82px;box-shadow:var(--shadow);border:2px solid transparent;transition:border-color .15s,background-color .15s}
@@ -97,7 +97,7 @@ button:disabled{cursor:default}
 .empty{padding:50px 0;text-align:center;color:var(--soft)}
 
 /* Barra inferior */
-.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding-bottom:max(14px,env(safe-area-inset-bottom,0px))}
+.bar{padding-top:6px;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))}
 .bar .wrap{display:flex;align-items:center;gap:16px;background:var(--ink);color:#fff;border-radius:22px;min-height:78px;padding-block:12px;max-width:1140px;margin-inline:max(14px,env(safe-area-inset-left,0px)) max(14px,env(safe-area-inset-right,0px));box-shadow:0 10px 30px rgb(29 27 38 / .25)}
 @media (min-width:1170px){.bar .wrap{margin-inline:auto}}
 .bar .n{font:800 28px/1 var(--display)}
@@ -204,7 +204,7 @@ button:disabled{cursor:default}
 .pill{background:transparent;border:1px solid var(--line);border-radius:2px}
 .head .avatar{display:none}
 .head h1{font:500 50px/1 "Playfair Display",Georgia,serif;font-style:italic}
-.list{gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r,4px);padding:4px 22px;margin-bottom:130px}
+.list{gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r,4px);padding:4px 22px;margin-bottom:0}
 @media (min-width:920px){.list{column-gap:44px}}
 .row{background:transparent!important;box-shadow:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding-left:0;min-height:76px}
 .row.on .pn{color:var(--accent)}
