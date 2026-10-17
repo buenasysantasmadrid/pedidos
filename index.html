@@ -216,6 +216,8 @@ button:disabled{cursor:default}
 .stepper .q{font:500 30px/1 "Playfair Display",Georgia,serif!important;color:var(--ink)}
 .row:not(.on) .q{color:var(--faint)}
 .hab{background:transparent;color:var(--soft);padding:0;font-weight:400;font-style:italic}
+.hint .min{color:var(--soft);font-style:italic}
+.hint .hab{color:var(--accent);font-weight:600}
 .search,.chipbtn,.back,.tabs,.histbtn{box-shadow:none;border:1px solid var(--line);border-radius:var(--r,4px);background-color:var(--card)}
 .tabs button{border-radius:2px}
 .tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
@@ -300,6 +302,20 @@ function habNum(t){
   m = t.match(/^(\d+)[.,](\d+)/); if (m) return parseFloat(m[1]+'.'+m[2]);
   m = t.match(/^(\d+)/); return m ? +m[1] : 0;
 }
+// Cantidad habitual calculada con los pedidos anteriores: la mediana de los últimos 8 pedidos
+// de ese producto. Hacen falta al menos 3 pedidos; si no, devuelve 0.
+function habituales(){
+  const m = new Map();
+  for (const r of todasLasFilas()){ if (r.cant > 0 && r.id){ if (!m.has(r.id)) m.set(r.id, []); m.get(r.id).push(r); } }
+  const out = {};
+  for (const [id, rs] of m){
+    const cs = rs.sort((a,b) => String(b.f).localeCompare(String(a.f))).slice(0, 8).map(r => r.cant).sort((a,b) => a - b);
+    if (cs.length < 3) continue;
+    const k = cs.length >> 1, med = cs.length % 2 ? cs[k] : (cs[k-1] + cs[k]) / 2;
+    out[id] = Math.round(med * 4) / 4;
+  }
+  return out;
+}
 function unidad(p){
   if (p.unidad && !/^pack/i.test(p.unidad)) return p.unidad;
   const t = String(p.habitual||'').replace(/^[\d\s.,\/]+/, '').replace(/c\/\s*men[uú]/i,'').trim();
@@ -344,6 +360,7 @@ async function sincronizar(){
   for (const p of [...cola]){
     try { await llamar(p); cola = cola.filter(x => x.pedido !== p.pedido); store.set('pp.cola', cola); } catch(e){ break; }
   }
+  cargarHistorial();   // para calcular las cantidades habituales
 }
 window.addEventListener('online', sincronizar);
 
@@ -405,6 +422,7 @@ async function cargarHistorial(){
   } catch(e){ H.error = true; }
   H.cargando = false;
   if (ui.vista === 'hist') pintarHist();
+  else if (ui.vista === 'prov' && !$('#modal').innerHTML && document.activeElement?.id !== 'buscar') pintarProv();
 }
 
 function pintarHist(){
@@ -585,12 +603,13 @@ function filas(p, d){
   if (ui.solo) its = its.filter(x => d.q[x.id] > 0);
   if (!its.length) return `<p class="empty">${ui.solo ? 'Todavía no has añadido nada.' : q ? 'No hay ningún producto con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos.'}</p>`;
   let html = '', sec = null;
+  const hab = habituales();
   for (const x of its){
     if (x.seccion && x.seccion !== sec){ sec = x.seccion; html += `<h3>${esc(sec)}</h3>`; }
-    const v = d.q[x.id] || 0, u = unidad(x), hn = habNum(x.habitual);
+    const v = d.q[x.id] || 0, u = unidad(x), h = hab[x.id];
     html += `<div class="row ${v ? 'on' : ''}" data-id="${esc(x.id)}">
       <div class="txt"><div class="pn">${esc(cap(x.producto))}</div>
-        <div class="hint">${x.habitual ? `<button class="hab" data-act="hab" data-id="${esc(x.id)}" ${hn ? '' : 'disabled'}>Habitual ${esc(x.habitual)}</button>` : (u ? `<span>${esc(u)}</span>` : '')}${/^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : ''}</div></div>
+        <div class="hint">${x.habitual ? `<span class="min">Mínimo ${esc(x.habitual)}</span>` : (u ? `<span>${esc(u)}</span>` : '')}${h ? `<button class="hab" data-act="hab" data-id="${esc(x.id)}">Habitual ${fmtQ(h)}</button>` : ''}${/^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : ''}</div></div>
       <div class="stepper">
         <button class="minus" data-act="menos" data-id="${esc(x.id)}" aria-label="Quitar uno">−</button>
         <button class="q" data-act="teclado" data-id="${esc(x.id)}" aria-label="Escribir cantidad">${fmtQ(v)}</button>
@@ -613,7 +632,7 @@ function pintarProv(){
     ${es.length > 1 ? `<div class="tabs" role="group" aria-label="Día de entrega">${es.map(e => `<button data-act="entrega" data-e="${e}" aria-pressed="${e===ui.entrega}">Entrega ${DIA[e]} ${dm(proxima(e))}<span data-n="${e}">${nLin(p.proveedor,e) ? ' · '+nLin(p.proveedor,e) : ''}</span></button>`).join('')}</div>` : ''}
     <div class="tools">
       <input class="search" id="buscar" type="search" placeholder="Buscar" value="${esc(ui.buscar)}" autocomplete="off">
-      <button class="chipbtn" data-act="habituales">Poner habituales</button>
+      ${prods(p.proveedor).some(x => habituales()[x.id]) ? `<button class="chipbtn" data-act="habituales">Poner habituales</button>` : ''}
       ${ult && ult.items && ult.items.length ? `<button class="chipbtn" data-act="repetir">Repetir último</button>` : ''}
       <button class="chipbtn" data-act="solo" aria-pressed="${ui.solo}">Solo lo pedido</button>
       <button class="chipbtn danger" data-act="vaciar">Vaciar</button>
@@ -650,7 +669,7 @@ function teclado(id){
   $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="kt">
     <h2 id="kt">${esc(cap(x.producto))}</h2>
     <div class="kout" id="kout">${fmtQ(ini)}</div>
-    <div class="kunit">${esc([unidad(x), x.habitual ? 'habitual '+x.habitual : ''].filter(Boolean).join(' · '))}</div>
+    <div class="kunit">${esc([unidad(x), x.habitual ? 'mínimo '+x.habitual : '', habituales()[id] ? 'habitual '+fmtQ(habituales()[id]) : ''].filter(Boolean).join(' · '))}</div>
     <div class="keys">
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="fr" data-f="0.25">¼</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="fr" data-f="0.5">½</button>
@@ -736,11 +755,12 @@ document.addEventListener('click', e => {
   if (a === 'mas'){ const v = d.q[id] || 0; setQ(id, v > 0 && v < 1 ? 1 : v + 1); }
   else if (a === 'menos'){ const v = d.q[id] || 0; setQ(id, v > 1 ? v - 1 : 0); }
   else if (a === 'teclado') teclado(id);
-  else if (a === 'hab'){ const x = prods(p.proveedor).find(z => z.id === id); setQ(id, habNum(x.habitual)); }
+  else if (a === 'hab'){ const h = habituales()[id]; if (h) setQ(id, h); }
   else if (a === 'entrega'){ ui.entrega = b.dataset.e; pintarProv(); }
   else if (a === 'solo'){ ui.solo = !ui.solo; pintarProv(); }
   else if (a === 'habituales'){
-    let n = 0; for (const x of prods(p.proveedor)){ const h = habNum(x.habitual); if (h && !d.q[x.id]){ d.q[x.id] = h; n++; } }
+    const hab = habituales();
+    let n = 0; for (const x of prods(p.proveedor)){ const h = hab[x.id]; if (h && !d.q[x.id]){ d.q[x.id] = h; n++; } }
     save(); pintarProv(); toast(n ? n+' cantidades puestas. Ajusta lo que sobre.' : 'No hay cantidades habituales que poner');
   }
   else if (a === 'repetir'){
