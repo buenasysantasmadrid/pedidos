@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pedidos Buenas y Santas</title>
-<meta name="theme-color" content="#d9eedf">
+<meta name="theme-color" content="#556b2f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pedidos">
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;700&display=swap">
 <style>
 /* Una sola mirada: lista limpia de proveedores con su color; dentro, filas con contador redondo y barra de envío abajo. */
 :root{
@@ -189,6 +189,67 @@ button:disabled{cursor:default}
   .tabs button{padding:0 14px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+:root{--bg:#f4f5ef;--card:#ffffff;--ink:#2a3324;--soft:#6e7765;--faint:#cdd3c4;--line:#dde2d4;--accent:#556b2f;--accent-ink:#fff;--accent-soft:#eaefdf;--done:#556b2f;--done-soft:#e5ecd8;--part:#9c5d1a;--part-soft:#f3e7d6;--danger:#9e3a2b;--barbg:#556b2f;--barfg:#fff;--barbtn:#f4f5ef;--barbtnfg:#2a3324;--r:16px;--display:"Playfair Display",Georgia,serif;--shadow:none}
+.title{font:600 44px/1 "Playfair Display",Georgia,serif;font-style:italic;letter-spacing:-.01em}
+.grid{gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r,4px);grid-template-columns:1fr 1fr 1fr;padding:6px 20px}
+@media (max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.grid{grid-template-columns:1fr}}
+.prov{background:transparent;box-shadow:none;border-radius:0;border-bottom:1px solid var(--line);padding:20px 8px;min-height:auto}
+.prov .avatar{display:none}
+.prov .name{font:500 27px/1.1 "Playfair Display",Georgia,serif;font-style:italic}
+.prov .sub{font-size:14px}
+.status{background:transparent!important;border:1px solid var(--line);font-weight:500;border-radius:2px;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+.status.part,.status.done{border-color:currentColor}
+.pill{background:transparent;border:1px solid var(--line);border-radius:2px}
+.head .avatar{display:none}
+.head h1{font:500 50px/1 "Playfair Display",Georgia,serif;font-style:italic}
+.list{gap:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r,4px);padding:4px 22px;margin-bottom:130px}
+@media (min-width:920px){.list{column-gap:44px}}
+.row{background:transparent!important;box-shadow:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding-left:0;min-height:76px}
+.row.on .pn{color:var(--accent)}
+.row.on{border-bottom:2px solid var(--accent)}
+.pn{font:500 20px/1.2 "Playfair Display",Georgia,serif!important}
+.stepper button{width:48px!important;height:48px!important;font-size:24px!important}
+.stepper .minus{background:transparent;border:1px solid var(--line);opacity:1!important;color:var(--ink)}
+.stepper .plus{background:transparent;border:1px solid var(--accent);color:var(--accent)}
+.stepper .q{font:500 30px/1 "Playfair Display",Georgia,serif!important;color:var(--ink)}
+.row:not(.on) .q{color:var(--faint)}
+.hab{background:transparent;color:var(--soft);padding:0;font-weight:400;font-style:italic}
+.search,.chipbtn,.back,.tabs,.histbtn{box-shadow:none;border:1px solid var(--line);border-radius:var(--r,4px);background-color:var(--card)}
+.tabs button{border-radius:2px}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.bar .wrap{background:var(--barbg);color:var(--barfg);border-radius:var(--r,4px)}
+.bar .n{font:500 30px/1 "Playfair Display",Georgia,serif;font-style:italic}
+.bar .send{background:var(--barbtn);color:var(--barbtnfg);border-radius:var(--r,4px)}
+.top{background:#556b2f}.top .title,.top .date{color:#fff}.top .date{opacity:.8}
+ .top .histbtn,.top .back{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff}
+ .top .wrap{min-height:84px} .summary{margin-top:18px} .head{padding-top:18px}
+ .grid{background:transparent;border:0;padding:0;gap:10px}
+ .prov{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+ .list{background:transparent;border:0;padding:0;gap:8px}
+ .row{background:var(--card)!important;border:1px solid var(--line);border-radius:14px;padding:8px 10px 8px 18px}
+ .row.on{border:1.5px solid var(--accent);background:#f7f9f1!important}
+ .stepper .plus{background:var(--accent);color:#fff}
+/* Olivo · historial y ventanas */
+.seg,.sel,.fechas input{box-shadow:none;border:1px solid var(--line);border-radius:12px}
+.seg button{border-radius:8px}
+.seg button[aria-pressed="true"]{background:var(--accent)}
+.hcard,.ptable{box-shadow:none;border:1px solid var(--line);border-radius:16px}
+.hprov{font:500 24px/1.15 "Playfair Display",Georgia,serif;font-style:italic}
+.hcard li b{font-family:"Playfair Display",Georgia,serif}
+.prow.phead{background:#f7f9f1}
+.pbar i{background:var(--accent)}
+.chipbtn.small{background:var(--accent-soft);color:var(--accent);border:0}
+.dlg{border-radius:18px}
+.dlg h2{font:500 30px/1.1 "Playfair Display",Georgia,serif;font-style:italic}
+.kout{font-family:"Playfair Display",Georgia,serif}
+.keys .ok,.acts .wa{background:var(--accent)}
+.note{background:var(--part-soft);color:#6e4210;border-radius:12px}
+.top .title{color:#fff}
+.stepper .q,.kout,.hcard li b,.bar .n,.prow .num,.pbar b,.pn{font-variant-numeric:lining-nums tabular-nums!important}
+.hcard li span{font-weight:400}
+
 </style>
 </head>
 <body>
