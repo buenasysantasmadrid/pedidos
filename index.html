@@ -221,6 +221,20 @@ button:disabled{cursor:default}
 .otro-in::placeholder{color:var(--soft);font-style:italic}
 .otro-in:focus{outline:none;border:1px solid var(--accent);background:#fff}
 .row.on .otro-in{border-style:solid;border-color:var(--accent);background:#fff;color:var(--accent)}
+.hint .precio{color:var(--ink);font-weight:600}
+.sube{color:var(--danger);font-weight:700}
+.baja{color:var(--accent);font-weight:700}
+.aviso{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin:18px 0 0;padding:16px 20px;border:1px solid var(--part);border-radius:16px;background:var(--part-soft);color:var(--part);font-weight:700;font-size:17px;text-align:left}
+.aviso b{flex:none;padding:6px 14px;border-radius:10px;background:var(--part);color:#fff;font-size:15px}
+.importe{margin:0 0 12px;font-size:16px;color:var(--ink)}
+.importe span{color:var(--soft);font-size:14px}
+.cambios{list-style:none;margin:0 0 16px;padding:0}
+.cambios li{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.cambios small{display:block;color:var(--soft);font-size:14px;margin-top:3px}
+.cambios a{color:var(--accent);font-weight:700}
+.cpre{flex:none;text-align:right;display:flex;flex-direction:column;gap:3px;font-size:15px}
+.hgasto{margin-top:4px;font-weight:700;color:var(--accent)}
+.hgastot{font-size:16px}.hgastot small{color:var(--soft);font-size:13px}
 .addotro{grid-column:1/-1;justify-self:start;height:52px;padding:0 20px;margin-top:2px;border:1px dashed var(--accent);border-radius:14px;background:transparent;color:var(--accent);font-weight:700;font-size:17px}
 .hint .hab{color:var(--accent);font-weight:600}
 .search,.chipbtn,.back,.tabs,.histbtn{box-shadow:none;border:1px solid var(--line);border-radius:var(--r,4px);background-color:var(--card)}
@@ -320,6 +334,18 @@ function habituales(){
   }
   return out;
 }
+/* ---------- precios (vienen de las facturas escaneadas en el Cierre de caja) ---------- */
+const eur = n => n.toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+function precios(){ const o = {}; for (const x of cat.productos) if (+x.precio > 0) o[x.id] = +x.precio; return o; }
+// Importe aproximado de unas líneas {id, cantidad}: las que no tienen precio no cuentan
+function importe(lns, pr){ let t = 0, sin = 0; for (const l of lns){ const p = pr[l.id]; if (p) t += p * l.cantidad; else sin++; } return {t, sin}; }
+// Último cambio de precio de cada producto en los últimos N días
+function cambiosRecientes(dias){
+  const lim = isoDia(new Date(Date.now() - dias*86400000)), o = {};
+  for (const c of cat.cambios || []) if (c.fecha >= lim) o[c.id] = c;
+  return o;
+}
+const flecha = c => c.cambio > 0 ? `<span class="sube">↑ ${String(Math.abs(c.cambio)).replace('.', ',')} %</span>` : `<span class="baja">↓ ${String(Math.abs(c.cambio)).replace('.', ',')} %</span>`;
 function unidad(p){
   if (p.unidad && !/^pack/i.test(p.unidad)) return p.unidad;
   const t = String(p.habitual||'').replace(/^[\d\s.,\/]+/, '').replace(/c\/\s*men[uú]/i,'').trim();
@@ -379,7 +405,7 @@ async function llamar(body){
 async function sincronizar(){
   try {
     const j = await llamar({accion:'catalogo'});
-    cat = {proveedores:j.proveedores||[], productos:j.productos||[], ultimos:j.ultimos||{}}; store.set('pp.cat3', cat);
+    cat = {proveedores:j.proveedores||[], productos:j.productos||[], ultimos:j.ultimos||{}, cambios:j.cambios||[]}; store.set('pp.cat3', cat);
     hoja = 'ok';
     if (document.activeElement?.tagName !== 'INPUT') render();
   } catch(e){ if (!cat.proveedores.length){ hoja = 'error'; render(); } }
@@ -463,6 +489,9 @@ function pintarHist(){
   const nProd = new Set(rs.map(r => r.prov+'|'+r.prod)).size;
   const nProv = new Set(rs.map(r => r.prov)).size;
   const provsHist = [...new Set([...provs().map(p => p.proveedor), ...todasLasFilas().map(r => r.prov)])];
+  // Gasto aproximado: cantidades pedidas × precio actual de cada producto
+  const pr = precios(), gasto = items => importe(items.map(r => ({id:r.id, cantidad:r.cant})), pr).t;
+  const gTotal = gasto(rs);
 
   let cuerpo = '';
   if (!rs.length){
@@ -471,7 +500,8 @@ function pintarHist(){
     cuerpo = `<div class="hlist">${lista.map(p => `
       <article class="hcard">
         <header><div><div class="hdate">${esc(fechaLarga(p.f))} · ${esc(hm(p.f))}</div>
-          <div class="hprov">${esc(bonito(p.prov))}${p.ent ? ` <span>entrega ${esc(p.ent)}</span>` : ''}${p.local ? ' <span class="tag">sin subir a la hoja</span>' : ''}</div></div>
+          <div class="hprov">${esc(bonito(p.prov))}${p.ent ? ` <span>entrega ${esc(p.ent)}</span>` : ''}${p.local ? ' <span class="tag">sin subir a la hoja</span>' : ''}</div>
+          ${gasto(p.items) ? `<div class="hgasto">≈ ${eur(gasto(p.items))}</div>` : ''}</div>
           <button class="chipbtn small" data-act="h-repetir" data-ped="${esc(p.ped)}">Repetir</button></header>
         <ul>${p.items.map(i => `<li><b>${fmtQ(i.cant)}</b> ${esc(i.uni||'')} <span>${esc(cap(i.prod))}</span></li>`).join('')}</ul>
       </article>`).join('')}</div>`;
@@ -499,13 +529,13 @@ function pintarHist(){
   } else {
     const ag = new Map();
     for (const p of lista){
-      if (!ag.has(p.prov)) ag.set(p.prov, {prov:p.prov, pedidos:0, lineas:0, ult:p.f});
-      const g = ag.get(p.prov); g.pedidos++; g.lineas += p.items.length; if (p.f > g.ult) g.ult = p.f;
+      if (!ag.has(p.prov)) ag.set(p.prov, {prov:p.prov, pedidos:0, lineas:0, ult:p.f, eur:0});
+      const g = ag.get(p.prov); g.pedidos++; g.lineas += p.items.length; g.eur += gasto(p.items); if (p.f > g.ult) g.ult = p.f;
     }
-    const arr = [...ag.values()].sort((x,y) => y.pedidos - x.pedidos);
+    const arr = [...ag.values()].sort((x,y) => y.eur - x.eur || y.pedidos - x.pedidos);
     cuerpo = `<div class="grid">${arr.map(g => `<button class="prov" data-act="h-prov" data-prov="${esc(g.prov)}">
       <span class="avatar">${esc(iniciales(g.prov))}</span>
-      <span class="txt"><span class="name">${esc(bonito(g.prov))}</span><span class="sub" style="display:block">${g.pedidos} ${g.pedidos === 1 ? 'pedido' : 'pedidos'} · ${g.lineas} líneas · último ${esc(fechaLarga(g.ult))}</span></span></button>`).join('')}</div>`;
+      <span class="txt"><span class="name">${esc(bonito(g.prov))}</span><span class="sub" style="display:block">${g.pedidos} ${g.pedidos === 1 ? 'pedido' : 'pedidos'} · ${g.lineas} líneas${g.eur ? ' · ≈ '+eur(g.eur) : ''} · último ${esc(fechaLarga(g.ult))}</span></span></button>`).join('')}</div>`;
   }
 
   $('#main').innerHTML = `
@@ -523,6 +553,7 @@ function pintarHist(){
         <button data-act="h-modo" data-m="productos" aria-pressed="${H.modo==='productos'}">Productos · ${nProd}</button>
         <button data-act="h-modo" data-m="proveedores" aria-pressed="${H.modo==='proveedores'}">Proveedores · ${nProv}</button>
       </div>
+      ${gTotal ? `<span class="hgastot">Gasto ≈ <b>${eur(gTotal)}</b> <small>sin IVA, con los precios de hoy</small></span>` : ''}
       <span class="hinfo">${H.cargando ? 'Actualizando…' : H.error ? 'Sin conexión: datos guardados en la tablet' : ''}</span>
       ${rs.length ? `<button class="chipbtn" data-act="h-csv">Descargar Excel</button>` : ''}
     </div>
@@ -616,7 +647,10 @@ function pintarInicio(){
     return;
   }
   const env = ps.filter(p => enviado(p)).length, part = ps.filter(p => total(p) && !enviado(p)).length;
+  const visto = store.get('pp.cambiosVistos', {});
+  const nuevos = Object.values(cambiosRecientes(30)).filter(c => !visto[c.id+'|'+c.fecha]).length;
   $('#main').innerHTML = `
+    ${nuevos ? `<button class="aviso" data-act="cambios"><span>${nuevos} ${nuevos === 1 ? 'producto ha cambiado' : 'productos han cambiado'} de precio</span><b>Ver</b></button>` : ''}
     <div class="summary">
       <span class="pill"><i></i>${ps.length} proveedores</span>
       ${part ? `<span class="pill part"><i></i>${part} a medias</span>` : ''}
@@ -647,13 +681,13 @@ function filas(p, d){
       </div></div>`; }).join('') + (ui.solo ? '' : `<button class="addotro" data-act="masotro">+ Añadir otro producto</button>`) : '';
   if (!its.length) return (ui.solo && libres ? '' : `<p class="empty">${ui.solo ? 'Todavía no has añadido nada.' : q ? 'No hay ningún producto con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos en la hoja. Puedes escribirlos abajo.'}</p>`) + libres;
   let html = '', sec = null;
-  const hab = habituales();
+  const hab = habituales(), pr = precios(), cb = cambiosRecientes(30);
   for (const x of its){
     if (x.seccion && x.seccion !== sec){ sec = x.seccion; html += `<h3>${esc(sec)}</h3>`; }
     const v = d.q[x.id] || 0, u = unidad(x), h = hab[x.id];
     html += `<div class="row ${v ? 'on' : ''}" data-id="${esc(x.id)}">
       <div class="txt"><div class="pn">${esc(cap(x.producto))}</div>
-        <div class="hint">${x.habitual ? `<span class="min">Mínimo ${esc(x.habitual)}</span>` : (u ? `<span>${esc(u)}</span>` : '')}${h ? `<button class="hab" data-act="hab" data-id="${esc(x.id)}">Habitual ${fmtQ(h)}</button>` : ''}${/^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : ''}</div></div>
+        <div class="hint">${x.habitual ? `<span class="min">Mínimo ${esc(x.habitual)}</span>` : (u ? `<span>${esc(u)}</span>` : '')}${h ? `<button class="hab" data-act="hab" data-id="${esc(x.id)}">Habitual ${fmtQ(h)}</button>` : ''}${/^pack/i.test(x.unidad||'') ? `<span>${esc(x.unidad)}</span>` : ''}${pr[x.id] ? `<span class="precio">${eur(pr[x.id])}</span>` : ''}${cb[x.id] ? flecha(cb[x.id]) : ''}</div></div>
       <div class="stepper">
         <button class="minus" data-act="menos" data-id="${esc(x.id)}" aria-label="Quitar uno">−</button>
         <button class="q" data-act="teclado" data-id="${esc(x.id)}" aria-label="Escribir cantidad">${fmtQ(v)}</button>
@@ -687,7 +721,9 @@ function pintarProv(){
 
 function pintarBarra(){
   const p = prov(ui.prov), n = total(p), env = enviado(p), es = entregas(p);
-  const s = env ? 'Enviado a las '+hm(env) : es.length > 1 ? es.map(e => cap(DIA[e])+': '+nLin(p.proveedor,e)).join(' · ') : 'Pedido de hoy';
+  const imp = importe(ents(p).flatMap(e => { const d = drafts[dk(p.proveedor, e)]; return d ? lineas(p.proveedor, d) : []; }), precios());
+  const s = (env ? 'Enviado a las '+hm(env) : es.length > 1 ? es.map(e => cap(DIA[e])+': '+nLin(p.proveedor,e)).join(' · ') : 'Pedido de hoy')
+    + (imp.t ? ' · ≈ '+eur(imp.t) : '');
   $('#bar').hidden = false;
   $('#barin').innerHTML = `<div><div class="n">${n} ${n === 1 ? 'producto' : 'productos'}</div><div class="s">${esc(s)}</div></div>
     <button class="send" data-act="revisar" ${n ? '' : 'disabled'}>Revisar y enviar</button>`;
@@ -739,6 +775,19 @@ function teclado(id){
 }
 const cerrar = () => { $('#modal').innerHTML = ''; };
 
+/* ---------- cambios de precio ---------- */
+function verCambios(){
+  const cs = Object.values(cambiosRecientes(30)).sort((a,b) => b.fecha.localeCompare(a.fecha) || Math.abs(b.cambio) - Math.abs(a.cambio));
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ct">
+    <h2 id="ct">Cambios de precio</h2>
+    <p class="muted">Último mes, según las facturas escaneadas en el cierre de caja. Precios sin IVA.</p>
+    <ul class="cambios">${cs.map(c => `<li>
+      <div><b>${esc(cap(c.producto))}</b><small>${esc(bonito(c.proveedor))} · ${esc(fechaLarga(c.fecha))}${c.foto ? ` · <a href="${esc(c.foto)}" target="_blank" rel="noopener">ver factura</a>` : ''}</small></div>
+      <div class="cpre"><span>${eur(c.antes)} → <b>${eur(c.ahora)}</b></span>${flecha(c)}</div></li>`).join('')}</ul>
+    <div class="acts"><button data-act="cambios-ok">Entendido</button></div>
+  </div></div>`;
+}
+
 /* ---------- enviar ---------- */
 function texto(p){
   const partes = [];
@@ -752,9 +801,12 @@ function texto(p){
 }
 function revisar(){
   const p = prov(ui.prov), wa = String(p.whatsapp||'').replace(/\D/g,'');
+  const lns = ents(p).flatMap(e => { const d = drafts[dk(p.proveedor, e)]; return d ? lineas(p.proveedor, d) : []; });
+  const imp = importe(lns, precios());
   $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rt">
     <h2 id="rt">Pedido a ${esc(bonito(p.proveedor))}</h2>
     <p class="muted">${wa ? 'Puedes cambiar el texto antes de enviarlo.' : 'Este proveedor no tiene WhatsApp. Copia el texto y mándalo como sueles.'}</p>
+    ${imp.t ? `<p class="importe">Importe aproximado: <b>${eur(imp.t)}</b> sin IVA${imp.sin ? ` <span>(${imp.sin} ${imp.sin === 1 ? 'producto' : 'productos'} sin precio)</span>` : ''}</p>` : ''}
     <textarea class="msg" id="msg" aria-label="Mensaje del pedido">${esc(texto(p))}</textarea>
     <div class="acts">
       ${wa ? `<button class="wa" data-r="wa">${WA}Enviar por WhatsApp</button>` : ''}
@@ -794,6 +846,12 @@ document.addEventListener('click', e => {
   if (a === 'volver'){ ui.vista = 'inicio'; ui.buscar = ''; ui.solo = false; render(); scrollTo(0,0); return; }
   if (a === 'abrir'){ ui = {vista:'prov', prov:b.dataset.prov, entrega:'', buscar:'', solo:false}; render(); scrollTo(0,0); return; }
   if (a === 'hist'){ ui.vista = 'hist'; render(); scrollTo(0,0); cargarHistorial(); return; }
+  if (a === 'cambios'){ verCambios(); return; }
+  if (a === 'cambios-ok'){
+    const visto = store.get('pp.cambiosVistos', {});
+    for (const c of Object.values(cambiosRecientes(30))) visto[c.id+'|'+c.fecha] = 1;
+    store.set('pp.cambiosVistos', visto); cerrar(); render(); return;
+  }
   if (ui.vista === 'hist'){ accionHist(a, b); return; }
   if (ui.vista !== 'prov') return;
   const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);

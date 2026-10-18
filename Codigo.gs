@@ -51,6 +51,10 @@ function doPost(e) {
     try { return salida({ ok: true, filas: leerHistorial(d.dias || 183) }); }
     catch (err) { return salida({ ok: false, error: String(err) }); }
   }
+  if (d.accion === 'precios') {
+    try { return salida(guardarPrecios(d)); }
+    catch (err) { return salida({ ok: false, error: String(err) }); }
+  }
   if (d.accion !== 'pedido') return salida({ ok: false, error: 'Acción desconocida' });
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -161,8 +165,8 @@ function leerCatalogo() {
   proveedores.forEach(p => { nombre[clave(p.proveedor)] = p.proveedor; });
   const productos = leerTabla(HOJA_PROD)
     .filter(p => p.producto && p.proveedor && activo(p) && nombre[clave(p.proveedor)])
-    .map(p => Object.assign(p, { proveedor: nombre[clave(p.proveedor)] }));
-  return { proveedores, productos, ultimos: ultimosPedidos(), actualizado: new Date().toISOString() };
+    .map(p => Object.assign(p, { proveedor: nombre[clave(p.proveedor)], precio: numero(p.precio) || '' }));
+  return { proveedores, productos, ultimos: ultimosPedidos(), cambios: cambiosDePrecio(60), actualizado: new Date().toISOString() };
 }
 
 // Último pedido de cada proveedor (y de cada día de entrega), para "Repetir último"
@@ -180,6 +184,93 @@ function ultimosPedidos() {
     if (res[clave].pedido === f[8]) res[clave].items.push({ id: f[7], producto: f[4], cantidad: f[5] });
   }
   return res;
+}
+
+/* ---------- Precios (leídos de las facturas por la app de Cierre de caja) ---------- */
+// La app de Cierre de caja, al escanear una factura, manda aquí sus líneas ya emparejadas con
+// los productos: { accion:'precios', proveedor, factura, fecha:'AAAA-MM-DD', foto, lineas:[
+//   { texto, id, cantidad, unidad, precio } ] }. Se apuntan en APP_Precios y el último precio
+// de cada producto pasa a la columna Precio de APP_Productos. Precios sin IVA.
+
+const HOJA_PRECIOS = 'APP_Precios';
+const COL_PRECIOS = ['Fecha', 'Proveedor', 'Factura', 'En la factura', 'ID producto', 'Producto', 'Cantidad',
+  'Unidad', 'Precio', 'Precio anterior', 'Cambio %', 'Foto', 'Registrado'];
+
+// "3,20 €", "3.2" o 3.2 → 3.2
+function numero(v) {
+  if (typeof v === 'number') return v;
+  let s = String(v || '').replace(/[^\d,.\-]/g, '');
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function fechaISO(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, 'Europe/Madrid', 'yyyy-MM-dd');
+  return String(v || '').slice(0, 10);
+}
+
+function guardarPrecios(d) {
+  const lineas = (d.lineas || []).filter(l => numero(l.precio) > 0);
+  if (!d.proveedor || !lineas.length) return { ok: true, filas: 0 };
+  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(d.fecha || '')) ? d.fecha : fechaISO(new Date());
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const ss = SpreadsheetApp.getActive();
+    const hoja = hojaOCrear(HOJA_PRECIOS, COL_PRECIOS);
+    const previas = hoja.getLastRow() > 1 ? hoja.getRange(2, 1, hoja.getLastRow() - 1, COL_PRECIOS.length).getValues() : [];
+    // La misma factura escaneada otra vez no se apunta dos veces
+    const esta = r => r[1] === d.proveedor && (d.factura ? String(r[2]) === String(d.factura) : !r[2] && fechaISO(r[0]) === fecha);
+    if (previas.some(esta)) return { ok: true, filas: 0, repetida: true };
+
+    // Productos de la hoja y su fila, y el último precio conocido de cada uno
+    const hp = ss.getSheetByName(HOJA_PROD), cab = cabecera(hp);
+    const iId = cab.indexOf('ID'), iProd = cab.indexOf('Producto'), iPrecio = cab.indexOf('Precio');
+    const datos = hp.getRange(2, 1, Math.max(1, hp.getLastRow() - 1), cab.length).getValues();
+    const prod = {};
+    datos.forEach((f, i) => { const id = String(f[iId]).trim(); if (id) prod[id] = { fila: i + 2, nombre: f[iProd], precio: numero(f[iPrecio]) }; });
+    const ultimo = {};   // id → { fecha, precio }
+    previas.forEach(r => { const id = String(r[4]); const p = numero(r[8]); const f = fechaISO(r[0]);
+      if (id && p > 0 && (!ultimo[id] || f >= ultimo[id].fecha)) ultimo[id] = { fecha: f, precio: p }; });
+
+    const ahora = new Date(), filas = [];
+    for (const l of lineas) {
+      const id = prod[String(l.id || '').trim()] ? String(l.id).trim() : '';
+      const precio = Math.round(numero(l.precio) * 10000) / 10000;
+      const antes = id ? (ultimo[id] ? ultimo[id].precio : prod[id].precio) : 0;
+      const cambio = antes ? Math.round((precio - antes) / antes * 1000) / 10 : '';
+      filas.push([new Date(fecha + 'T12:00:00'), d.proveedor, d.factura || '', String(l.texto || ''), id, id ? prod[id].nombre : '',
+        numero(l.cantidad) || '', String(l.unidad || ''), precio, antes || '', cambio, d.foto || '', ahora]);
+      // El precio de la hoja de productos es siempre el de la factura más reciente
+      if (id && iPrecio >= 0 && (!ultimo[id] || fecha >= ultimo[id].fecha)) {
+        hp.getRange(prod[id].fila, iPrecio + 1).setValue(precio);
+        ultimo[id] = { fecha, precio };
+      }
+    }
+    hoja.getRange(hoja.getLastRow() + 1, 1, filas.length, COL_PRECIOS.length).setValues(filas);
+    hoja.getRange(2, 1, hoja.getLastRow() - 1, 1).setNumberFormat('dd/mm/yyyy');
+    return { ok: true, filas: filas.length, emparejadas: filas.filter(f => f[4]).length };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Último cambio de precio de cada producto en los últimos N días (para el aviso de la app)
+function cambiosDePrecio(dias) {
+  const hoja = SpreadsheetApp.getActive().getSheetByName(HOJA_PRECIOS);
+  if (!hoja || hoja.getLastRow() < 2) return [];
+  const limite = fechaISO(new Date(Date.now() - dias * 86400000));
+  const filas = hoja.getRange(2, 1, hoja.getLastRow() - 1, COL_PRECIOS.length).getValues();
+  const res = {};
+  for (const r of filas) {
+    const id = String(r[4]), f = fechaISO(r[0]);
+    if (!id || f < limite) continue;
+    if (!res[id] || f >= res[id].fecha) res[id] = { id, producto: r[5], proveedor: r[1], fecha: f,
+      antes: numero(r[9]), ahora: numero(r[8]), cambio: r[10] === '' ? 0 : Number(r[10]), factura: String(r[2]), foto: String(r[11]) };
+  }
+  // Solo cuenta si la factura más reciente de ese producto cambió el precio
+  return Object.values(res).filter(c => c.cambio).sort((a, b) => b.fecha.localeCompare(a.fecha));
 }
 
 /* ---------- Preparación de la hoja ---------- */
