@@ -217,6 +217,10 @@ button:disabled{cursor:default}
 .row:not(.on) .q{color:var(--faint)}
 .hab{background:transparent;color:var(--soft);padding:0;font-weight:400;font-style:italic}
 .hint .min{color:var(--soft);font-style:italic}
+.otro-in{width:100%;height:48px;padding:0 12px;border:1px dashed var(--faint);border-radius:10px;background:var(--bg);font:500 19px/1.2 "Playfair Display",Georgia,serif;color:var(--ink)}
+.otro-in::placeholder{color:var(--soft);font-style:italic}
+.otro-in:focus{outline:none;border:1px solid var(--accent);background:#fff}
+.row.on .otro-in{border-style:solid;border-color:var(--accent);background:#fff;color:var(--accent)}
 .hint .hab{color:var(--accent);font-weight:600}
 .search,.chipbtn,.back,.tabs,.histbtn{box-shadow:none;border:1px solid var(--line);border-radius:var(--r,4px);background-color:var(--card)}
 .tabs button{border-radius:2px}
@@ -341,7 +345,26 @@ const entregas = p => dias(p.entregas);
 const dk = (n, e) => hoyISO()+'|'+n+'|'+(e||'');
 const draft = (n, e) => drafts[dk(n, e)] || (drafts[dk(n, e)] = {q:{}, enviado:null});
 const save = () => store.set('pp.drafts', drafts);
-const nLin = (n, e) => { const d = drafts[dk(n, e)]; return d ? Object.values(d.q).filter(v => v > 0).length : 0; };
+// "Otros productos": líneas libres (x1, x2…) para lo que no está en la lista. Texto en d.otros, cantidad en d.q.
+const otros = d => d.otros || (d.otros = {});
+function lineas(n, d){
+  const out = prods(n).filter(x => d.q[x.id] > 0).map(x => ({id:x.id, producto:x.producto, cantidad:d.q[x.id], unidad:unidad(x)}));
+  for (const [k, t] of Object.entries(d.otros || {})) if (String(t).trim() && d.q[k] > 0) out.push({id:'', producto:String(t).trim(), cantidad:d.q[k], unidad:''});
+  return out;
+}
+function huecosOtros(d){
+  const usados = [...Object.keys(d.otros || {}), ...Object.keys(d.q)].filter(k => /^x\d+$/.test(k))
+    .filter(k => String((d.otros || {})[k] || '').trim() || d.q[k] > 0).map(k => +k.slice(1));
+  const n = Math.max(3, (usados.length ? Math.max(...usados) : 0) + 1);
+  return Array.from({length:n}, (_, i) => 'x'+(i+1));
+}
+function ponerOtro(d, texto, cant){
+  const o = otros(d), t = String(texto).trim(); if (!t || !(cant > 0)) return false;
+  let k = Object.keys(o).find(k => plano(o[k]) === plano(t));
+  for (let i = 1; !k; i++) if (!String(o['x'+i] || '').trim() && !(d.q['x'+i] > 0)){ k = 'x'+i; o[k] = t; }
+  d.q[k] = cant; return true;
+}
+const nLin = (n, e) => { const d = drafts[dk(n, e)]; return d ? lineas(n, d).length : 0; };
 const ents = p => entregas(p).length ? entregas(p) : [''];
 const total = p => ents(p).reduce((s,e) => s + nLin(p.proveedor, e), 0);
 const enviado = p => ents(p).map(e => (drafts[dk(p.proveedor, e)]||{}).enviado).filter(Boolean).sort().pop() || null;
@@ -356,7 +379,7 @@ async function sincronizar(){
     const j = await llamar({accion:'catalogo'});
     cat = {proveedores:j.proveedores||[], productos:j.productos||[], ultimos:j.ultimos||{}}; store.set('pp.cat3', cat);
     hoja = 'ok';
-    render();
+    if (document.activeElement?.tagName !== 'INPUT') render();
   } catch(e){ if (!cat.proveedores.length){ hoja = 'error'; render(); } }
   for (const p of [...cola]){
     try { await llamar(p); cola = cola.filter(x => x.pedido !== p.pedido); store.set('pp.cola', cola); } catch(e){ break; }
@@ -423,7 +446,7 @@ async function cargarHistorial(){
   } catch(e){ H.error = true; }
   H.cargando = false;
   if (ui.vista === 'hist') pintarHist();
-  else if (ui.vista === 'prov' && !$('#modal').innerHTML && document.activeElement?.id !== 'buscar') pintarProv();
+  else if (ui.vista === 'prov' && !$('#modal').innerHTML && document.activeElement?.tagName !== 'INPUT') pintarProv();
 }
 
 function pintarHist(){
@@ -516,6 +539,7 @@ function repetirPedido(ped){
   for (const it of its){
     let id = ids.has(it.id) ? it.id : (prods(p.proveedor).find(x => plano(x.producto) === plano(it.prod)) || {}).id;
     if (id && it.cant > 0){ d.q[id] = it.cant; n++; }
+    else if (!it.id && ponerOtro(d, it.prod, it.cant)) n++;
   }
   save();
   ui = {vista:'prov', prov:p.proveedor, entrega:e, buscar:'', solo:false};
@@ -608,7 +632,18 @@ function filas(p, d){
   let its = prods(p.proveedor);
   if (q) its = its.filter(x => plano(x.producto).includes(q));
   if (ui.solo) its = its.filter(x => d.q[x.id] > 0);
-  if (!its.length) return `<p class="empty">${ui.solo ? 'Todavía no has añadido nada.' : q ? 'No hay ningún producto con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos.'}</p>`;
+  // Líneas libres al final (no salen mientras se busca)
+  let ks = q ? [] : huecosOtros(d);
+  if (ui.solo) ks = ks.filter(k => String(otros(d)[k] || '').trim() && d.q[k] > 0);
+  const libres = ks.length ? `<h3>Otros productos</h3>` + ks.map(k => { const t = otros(d)[k] || '', v = d.q[k] || 0;
+    return `<div class="row otro ${v && t.trim() ? 'on' : ''}" data-id="${k}">
+      <div class="txt"><input class="otro-in" data-otro="${k}" type="text" placeholder="Escribe otro producto…" value="${esc(t)}" autocomplete="off"></div>
+      <div class="stepper">
+        <button class="minus" data-act="menos" data-id="${k}" aria-label="Quitar uno">−</button>
+        <button class="q" data-act="teclado" data-id="${k}" aria-label="Escribir cantidad">${fmtQ(v)}</button>
+        <button class="plus" data-act="mas" data-id="${k}" aria-label="Añadir uno">+</button>
+      </div></div>`; }).join('') : '';
+  if (!its.length) return (ui.solo && libres ? '' : `<p class="empty">${ui.solo ? 'Todavía no has añadido nada.' : q ? 'No hay ningún producto con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos en la hoja. Puedes escribirlos abajo.'}</p>`) + libres;
   let html = '', sec = null;
   const hab = habituales();
   for (const x of its){
@@ -623,7 +658,7 @@ function filas(p, d){
         <button class="plus" data-act="mas" data-id="${esc(x.id)}" aria-label="Añadir uno">+</button>
       </div></div>`;
   }
-  return html;
+  return html + libres;
 }
 
 function pintarProv(){
@@ -662,15 +697,17 @@ function setQ(id, v){
   if (v) d.q[id] = v; else delete d.q[id];
   save();
   const row = document.querySelector(`.row[data-id="${CSS.escape(id)}"]`);
-  if (row){ row.classList.toggle('on', v > 0); row.querySelector('.q').textContent = fmtQ(v); }
+  if (row){ row.classList.toggle('on', v > 0 && (!row.classList.contains('otro') || !!String(otros(d)[id] || '').trim())); row.querySelector('.q').textContent = fmtQ(v); }
   const t = document.querySelector(`[data-n="${ui.entrega}"]`); if (t){ const l = nLin(p.proveedor, ui.entrega); t.textContent = l ? ' · '+l : ''; }
   pintarBarra();
 }
 
 /* ---------- teclado ---------- */
 function teclado(id){
-  const x = prods(ui.prov).find(p => p.id === id); if (!x) return;
-  const ini = draft(ui.prov, ui.entrega).q[id] || 0;
+  const dd = draft(ui.prov, ui.entrega);
+  const x = prods(ui.prov).find(p => p.id === id) || (/^x\d+$/.test(id) ? {id, producto: String(otros(dd)[id] || '').trim() || 'Otro producto', habitual:''} : null);
+  if (!x) return;
+  const ini = dd.q[id] || 0;
   let ent = '', fr = 0, toc = false;
   const val = () => toc ? parseInt(ent || '0', 10) + fr : ini;
   $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="kt">
@@ -705,8 +742,8 @@ function texto(p){
   const partes = [];
   for (const e of ents(p)){
     const d = drafts[dk(p.proveedor, e)]; if (!d) continue;
-    const its = prods(p.proveedor).filter(x => d.q[x.id] > 0); if (!its.length) continue;
-    partes.push((e ? `*Entrega ${DIA[e]} ${dm(proxima(e))}*\n` : '') + its.map(x => { const u = unidad(x); return `- ${cap(x.producto)}: ${fmtQ(d.q[x.id])}${u ? ' '+u : ''}`; }).join('\n'));
+    const its = lineas(p.proveedor, d); if (!its.length) continue;
+    partes.push((e ? `*Entrega ${DIA[e]} ${dm(proxima(e))}*\n` : '') + its.map(x => `- ${cap(x.producto)}: ${fmtQ(x.cantidad)}${x.unidad ? ' '+x.unidad : ''}`).join('\n'));
   }
   const h = new Date();
   return `${p.contacto ? 'Hola '+p.contacto.split(' ')[0]+', ' : 'Hola, '}pedido de ${LOCAL} (${DIA[COD[h.getDay()]]} ${dm(h)}):\n\n${partes.join('\n\n')}\n\nGracias`;
@@ -739,11 +776,10 @@ function registrar(p){
   const ahora = new Date().toISOString();
   for (const e of ents(p)){
     const d = drafts[dk(p.proveedor, e)]; if (!d) continue;
-    const its = prods(p.proveedor).filter(x => d.q[x.id] > 0); if (!its.length) continue;
+    const its = lineas(p.proveedor, d); if (!its.length) continue;
     d.enviado = ahora;
     cola.push({accion:'pedido', pedido:p.proveedor.replace(/\W+/g,'').slice(0,12)+'-'+(e||'U')+'-'+Date.now().toString(36), ts:ahora,
-      proveedor:p.proveedor, entrega:e ? DIA[e] : '', dispositivo:'Tablet',
-      items:its.map(x => ({id:x.id, producto:x.producto, cantidad:d.q[x.id], unidad:unidad(x)}))});
+      proveedor:p.proveedor, entrega:e ? DIA[e] : '', dispositivo:'Tablet', items:its});
   }
   save(); store.set('pp.cola', cola); sincronizar();
 }
@@ -773,21 +809,42 @@ document.addEventListener('click', e => {
   else if (a === 'repetir'){
     const u = (cat.ultimos||{})[p.proveedor+'|'+(ui.entrega ? DIA[ui.entrega] : '')]; if (!u) return;
     const ids = new Set(prods(p.proveedor).map(x => x.id)); let n = 0;
-    for (const it of u.items) if (ids.has(it.id) && +it.cantidad > 0){ d.q[it.id] = +it.cantidad; n++; }
+    for (const it of u.items){
+      if (ids.has(it.id) && +it.cantidad > 0){ d.q[it.id] = +it.cantidad; n++; }
+      else if (!it.id && ponerOtro(d, it.producto, +it.cantidad)) n++;
+    }
     save(); pintarProv(); toast('Copiado el último pedido ('+n+(n === 1 ? ' producto)' : ' productos)'));
   }
   else if (a === 'vaciar'){
-    if (b.dataset.ok){ d.q = {}; d.enviado = null; save(); pintarProv(); toast('Pedido vaciado'); }
+    if (b.dataset.ok){ d.q = {}; d.otros = {}; d.enviado = null; save(); pintarProv(); toast('Pedido vaciado'); }
     else { b.dataset.ok = '1'; b.textContent = '¿Vaciar todo? Toca otra vez'; setTimeout(() => { if (b.isConnected){ delete b.dataset.ok; b.textContent = 'Vaciar'; } }, 3000); }
   }
   else if (a === 'revisar') revisar();
 });
 document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.otro;
+  if (k){
+    const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);
+    otros(d)[k] = e.target.value; save();
+    e.target.closest('.row').classList.toggle('on', d.q[k] > 0 && !!e.target.value.trim());
+    const t = document.querySelector(`[data-n="${ui.entrega}"]`); if (t){ const l = nLin(p.proveedor, ui.entrega); t.textContent = l ? ' · '+l : ''; }
+    pintarBarra();
+    return;
+  }
   if (e.target.id !== 'buscar') return;
   ui.buscar = e.target.value;
   const p = prov(ui.prov); $('.list').innerHTML = filas(p, draft(p.proveedor, ui.entrega));
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrar(); });
+// Al salir de una línea libre: si ya no queda ninguna vacía, se añade otra
+document.addEventListener('change', e => {
+  if (!(e.target.dataset && e.target.dataset.otro) || ui.vista !== 'prov') return;
+  const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);
+  if (huecosOtros(d).length > document.querySelectorAll('.otro-in').length) $('.list').innerHTML = filas(p, d);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') cerrar();
+  if (e.key === 'Enter' && e.target.classList && e.target.classList.contains('otro-in')) e.target.blur();
+});
 let tt; function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(() => el.hidden = true, 3000); }
 
 render();
