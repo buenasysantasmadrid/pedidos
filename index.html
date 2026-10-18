@@ -221,6 +221,7 @@ button:disabled{cursor:default}
 .otro-in::placeholder{color:var(--soft);font-style:italic}
 .otro-in:focus{outline:none;border:1px solid var(--accent);background:#fff}
 .row.on .otro-in{border-style:solid;border-color:var(--accent);background:#fff;color:var(--accent)}
+.addotro{grid-column:1/-1;justify-self:start;height:52px;padding:0 20px;margin-top:2px;border:1px dashed var(--accent);border-radius:14px;background:transparent;color:var(--accent);font-weight:700;font-size:17px}
 .hint .hab{color:var(--accent);font-weight:600}
 .search,.chipbtn,.back,.tabs,.histbtn{box-shadow:none;border:1px solid var(--line);border-radius:var(--r,4px);background-color:var(--card)}
 .tabs button{border-radius:2px}
@@ -355,7 +356,8 @@ function lineas(n, d){
 function huecosOtros(d){
   const usados = [...Object.keys(d.otros || {}), ...Object.keys(d.q)].filter(k => /^x\d+$/.test(k))
     .filter(k => String((d.otros || {})[k] || '').trim() || d.q[k] > 0).map(k => +k.slice(1));
-  const n = Math.max(3, (usados.length ? Math.max(...usados) : 0) + 1);
+  // Una línea, más las ya usadas, más las que se hayan añadido con "+ Añadir otro producto"
+  const n = Math.max(1, usados.length ? Math.max(...usados) : 0, ui.nOtros || 0);
   return Array.from({length:n}, (_, i) => 'x'+(i+1));
 }
 function ponerOtro(d, texto, cant){
@@ -642,7 +644,7 @@ function filas(p, d){
         <button class="minus" data-act="menos" data-id="${k}" aria-label="Quitar uno">−</button>
         <button class="q" data-act="teclado" data-id="${k}" aria-label="Escribir cantidad">${fmtQ(v)}</button>
         <button class="plus" data-act="mas" data-id="${k}" aria-label="Añadir uno">+</button>
-      </div></div>`; }).join('') : '';
+      </div></div>`; }).join('') + (ui.solo ? '' : `<button class="addotro" data-act="masotro">+ Añadir otro producto</button>`) : '';
   if (!its.length) return (ui.solo && libres ? '' : `<p class="empty">${ui.solo ? 'Todavía no has añadido nada.' : q ? 'No hay ningún producto con “'+esc(ui.buscar)+'”.' : 'Este proveedor no tiene productos en la hoja. Puedes escribirlos abajo.'}</p>`) + libres;
   let html = '', sec = null;
   const hab = habituales();
@@ -799,7 +801,12 @@ document.addEventListener('click', e => {
   else if (a === 'menos'){ const v = d.q[id] || 0; setQ(id, v > 1 ? v - 1 : 0); }
   else if (a === 'teclado') teclado(id);
   else if (a === 'hab'){ const h = habituales()[id]; if (h) setQ(id, h); }
-  else if (a === 'entrega'){ ui.entrega = b.dataset.e; pintarProv(); }
+  else if (a === 'masotro'){
+    ui.nOtros = huecosOtros(d).length + 1;
+    $('.list').innerHTML = filas(p, d);
+    const ins = document.querySelectorAll('.otro-in'); if (ins.length) ins[ins.length - 1].focus();
+  }
+  else if (a === 'entrega'){ ui.entrega = b.dataset.e; ui.nOtros = 0; pintarProv(); }
   else if (a === 'solo'){ ui.solo = !ui.solo; pintarProv(); }
   else if (a === 'habituales'){
     const hab = habituales();
@@ -816,7 +823,7 @@ document.addEventListener('click', e => {
     save(); pintarProv(); toast('Copiado el último pedido ('+n+(n === 1 ? ' producto)' : ' productos)'));
   }
   else if (a === 'vaciar'){
-    if (b.dataset.ok){ d.q = {}; d.otros = {}; d.enviado = null; save(); pintarProv(); toast('Pedido vaciado'); }
+    if (b.dataset.ok){ d.q = {}; d.otros = {}; ui.nOtros = 0; d.enviado = null; save(); pintarProv(); toast('Pedido vaciado'); }
     else { b.dataset.ok = '1'; b.textContent = '¿Vaciar todo? Toca otra vez'; setTimeout(() => { if (b.isConnected){ delete b.dataset.ok; b.textContent = 'Vaciar'; } }, 3000); }
   }
   else if (a === 'revisar') revisar();
@@ -834,12 +841,6 @@ document.addEventListener('input', e => {
   if (e.target.id !== 'buscar') return;
   ui.buscar = e.target.value;
   const p = prov(ui.prov); $('.list').innerHTML = filas(p, draft(p.proveedor, ui.entrega));
-});
-// Al salir de una línea libre: si ya no queda ninguna vacía, se añade otra
-document.addEventListener('change', e => {
-  if (!(e.target.dataset && e.target.dataset.otro) || ui.vista !== 'prov') return;
-  const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);
-  if (huecosOtros(d).length > document.querySelectorAll('.otro-in').length) $('.list').innerHTML = filas(p, d);
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') cerrar();
