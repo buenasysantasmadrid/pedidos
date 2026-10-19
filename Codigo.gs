@@ -104,6 +104,47 @@ function asegurarDatos() {
   const ss = SpreadsheetApp.getActive();
   if (!ss.getSheetByName(HOJA_PROV) || !ss.getSheetByName(HOJA_PROD) || !ss.getSheetByName(HOJA_PED)) configurar();
   ponerAlDia();
+  cambioUnaVez_ordenMonbake();
+}
+
+// UNA SOLA VEZ (19/10/2026): Berlys pasa a llamarse Monbake en todas las pestañas APP_ y los
+// proveedores se ordenan como pidió el usuario. Se apunta en las propiedades del script para
+// no repetirlo. Después se puede borrar esta función.
+function cambioUnaVez_ordenMonbake() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('orden_monbake') === 'hecho') return;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (props.getProperty('orden_monbake') === 'hecho') return;
+    const ss = SpreadsheetApp.getActive();
+    const renombrar = (nombreHoja, columna) => {
+      const h = ss.getSheetByName(nombreHoja);
+      if (!h || h.getLastRow() < 2) return;
+      const r = h.getRange(2, columna, h.getLastRow() - 1, 1), v = r.getValues();
+      if (v.some(f => String(f[0]).trim().toUpperCase() === 'BERLYS'))
+        r.setValues(v.map(f => [String(f[0]).trim().toUpperCase() === 'BERLYS' ? 'MONBAKE' : f[0]]));
+    };
+    const hp = ss.getSheetByName(HOJA_PROV);
+    renombrar(HOJA_PROV, 1);
+    renombrar(HOJA_PROD, cabecera(ss.getSheetByName(HOJA_PROD)).indexOf('Proveedor') + 1);
+    renombrar(HOJA_PED, 4);
+    renombrar(HOJA_PRECIOS, 2);
+    // Orden: estos primero, CBG, Bilandera y Duo Harinero al final, el resto en medio
+    const primeros = ['MERCADONA', 'ATLANTA', 'IBEROLACTAL', 'DISBESA', 'MONBAKE', 'HUGHES', 'ENVAPRO'];
+    const ultimos = ['CBG', 'BILANDERA', 'DUO HARINERO'];
+    const n = hp.getLastRow() - 1, nc = hp.getLastColumn();
+    if (n > 1) {
+      const filas = hp.getRange(2, 1, n, nc).getValues();
+      const pos = f => { const k = String(f[0]).trim().toUpperCase();
+        return primeros.indexOf(k) >= 0 ? primeros.indexOf(k) : ultimos.indexOf(k) >= 0 ? 1000 + ultimos.indexOf(k) : 500; };
+      const ordenadas = filas.map((f, i) => ({ f, i })).sort((a, b) => pos(a.f) - pos(b.f) || a.i - b.i).map(x => x.f);
+      hp.getRange(2, 1, n, nc).setValues(ordenadas);
+    }
+    props.setProperty('orden_monbake', 'hecho');
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function reglaSiNo() {
