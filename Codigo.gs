@@ -24,13 +24,15 @@ const HOJA_PED = 'APP_Pedidos';
 
 const COL_PROV = ['Proveedor', 'Contacto', 'Teléfono', 'WhatsApp', 'Entregas', 'Nota', 'Activo'];
 const COL_PROD = ['ID', 'Proveedor', 'Sección', 'Producto', 'Unidad', 'Mínimo', 'Ref', 'Precio', 'Activo'];
-const COL_PED = ['Fecha', 'Hora', 'Entrega', 'Proveedor', 'Producto', 'Cantidad', 'Unidad', 'ID producto', 'Pedido', 'Dispositivo'];
+const COL_PED = ['Fecha', 'Hora', 'Entrega', 'Proveedor', 'Producto', 'Cantidad', 'Unidad', 'ID producto', 'Pedido', 'Dispositivo',
+  'Precio aprox.', 'Importe aprox.'];
 
 const CLAVES = {
   'Proveedor': 'proveedor', 'Contacto': 'contacto', 'Teléfono': 'telefono', 'WhatsApp': 'whatsapp',
   'Días de pedido': 'dias', 'Entregas': 'entregas', 'Nota': 'nota',
   'ID': 'id', 'Sección': 'seccion', 'Producto': 'producto', 'Unidad': 'unidad',
-  'Habitual': 'habitual', 'Mínimo': 'habitual', 'Minimo': 'habitual', 'Ref': 'ref', 'Precio': 'precio', 'Activo': 'activo'
+  'Habitual': 'habitual', 'Mínimo': 'habitual', 'Minimo': 'habitual', 'Ref': 'ref', 'Precio': 'precio', 'Activo': 'activo',
+  'Pedido mínimo': 'pedidoMinimo', 'Pedido minimo': 'pedidoMinimo'
 };
 
 /* ---------- API para la app ---------- */
@@ -68,10 +70,12 @@ function doPost(e) {
       if (ids.indexOf(d.pedido) >= 0) return salida({ ok: true, pedido: d.pedido, repetido: true });
     }
     const ahora = new Date(d.ts || Date.now());
-    const filas = (d.items || []).map(it => [
-      ahora, Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'HH:mm'),
-      d.entrega || '', d.proveedor, it.producto, Number(it.cantidad), it.unidad || '', it.id, d.pedido, d.dispositivo || ''
-    ]);
+    const filas = (d.items || []).map(it => {
+      const precio = numero(it.precio);
+      return [ahora, Utilities.formatDate(ahora, Session.getScriptTimeZone(), 'HH:mm'),
+        d.entrega || '', d.proveedor, it.producto, Number(it.cantidad), it.unidad || '', it.id, d.pedido, d.dispositivo || '',
+        precio || '', precio ? Math.round(precio * Number(it.cantidad) * 100) / 100 : ''];
+    });
     if (filas.length) {
       hoja.getRange(hoja.getLastRow() + 1, 1, filas.length, COL_PED.length).setValues(filas);
     }
@@ -170,6 +174,21 @@ function ponerAlDia() {
       if (hp.getLastRow() > 1) hp.getRange(2, col, hp.getLastRow() - 1, 1).setValue('SI');
       hp.getRange(2, col, 1000, 1).setDataValidation(reglaSiNo());
     }
+    // Proveedores: columna "Pedido mínimo" en euros (la app avisa si el pedido no llega)
+    if (hp && cabecera(hp).indexOf('Pedido mínimo') < 0) {
+      const col = hp.getLastColumn() + 1;
+      hp.getRange(1, col).setValue('Pedido mínimo').setFontWeight('bold').setBackground('#1f5c45').setFontColor('#ffffff')
+        .setNote('Pedido mínimo en euros, sin IVA (ej. 80). Vacío = no tiene. La app avisa si el pedido no llega.');
+      const nombres = hp.getLastRow() > 1 ? hp.getRange(2, 1, hp.getLastRow() - 1, 1).getValues() : [];
+      nombres.forEach((f, i) => { if (String(f[0]).trim().toUpperCase() === 'DUO HARINERO') hp.getRange(i + 2, col).setValue(80); });
+    }
+    // Pedidos: precio e importe aproximados de cada línea
+    const hped = ss.getSheetByName(HOJA_PED);
+    if (hped && cabecera(hped).indexOf('Importe aprox.') < 0) {
+      hped.getRange(1, 11, 1, 2).setValues([['Precio aprox.', 'Importe aprox.']])
+        .setFontWeight('bold').setBackground('#1f5c45').setFontColor('#ffffff');
+      hped.getRange(1, 12).setNote('Cantidad × último precio conocido (de las facturas), sin IVA. Aproximado.');
+    }
     const hd = ss.getSheetByName(HOJA_PROD);
     if (!hd) return;
     const cab = cabecera(hd);
@@ -199,7 +218,8 @@ function ponerAlDia() {
 function leerCatalogo() {
   asegurarDatos();
   const activo = x => String(x.activo || 'SI').trim().toUpperCase() !== 'NO';
-  const proveedores = leerTabla(HOJA_PROV).filter(p => p.proveedor && activo(p));
+  const proveedores = leerTabla(HOJA_PROV).filter(p => p.proveedor && activo(p))
+    .map(p => Object.assign(p, { pedidoMinimo: numero(p.pedidoMinimo) || '' }));
   // El nombre del proveedor en productos se compara sin mayúsculas ni espacios de más
   const clave = s => String(s).trim().replace(/\s+/g, ' ').toUpperCase();
   const nombre = {};

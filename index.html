@@ -274,6 +274,37 @@ button:disabled{cursor:default}
 .stepper .q,.kout,.hcard li b,.bar .n,.prow .num,.pbar b,.pn{font-variant-numeric:lining-nums tabular-nums!important}
 .hcard li span{font-weight:400}
 
+/* Tarjeta de proveedor del inicio: zona para entrar + botón ✓ de enviado */
+.provcard{padding:0!important;gap:0}
+.provabrir{flex:1;min-width:0;display:flex;align-items:center;gap:16px;text-align:left;padding:20px 10px 20px 22px}
+.check{flex:none;width:46px;height:46px;margin-right:18px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--faint);font-size:22px;font-weight:800;line-height:1}
+.check.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.pill.imprimir{margin-left:auto;cursor:pointer;color:var(--accent);border-color:var(--accent)}
+/* Barra de abajo: estimación de la compra + botón de enviar */
+.bar .send{display:flex;align-items:center;gap:8px}
+.bar .send svg{width:22px;height:22px;flex:none}
+.est-bar{min-width:0}
+.bar .s.falta{opacity:1;color:#ffd9a0;font-weight:700}
+/* Impresión: solo la hoja de pedidos de la semana */
+#print{display:none}
+@media print{
+  @page{margin:12mm}
+  body{background:#fff!important}
+  body > *:not(#print){display:none!important}
+  #print{display:block;color:#000;font:11pt/1.35 Figtree,Arial,sans-serif}
+  #print h1{margin:0;font:600 22pt/1.1 "Playfair Display",Georgia,serif;font-style:italic}
+  #print .psub{margin:2mm 0 4mm;color:#444}
+  #print section{break-inside:avoid;border-top:1.5pt solid #556b2f;padding-top:2mm;margin-top:5mm}
+  #print h2{margin:0;font:600 15pt "Playfair Display",Georgia,serif;font-style:italic;color:#556b2f}
+  #print h3{margin:2.5mm 0 1mm;font-size:10pt;font-weight:600;color:#333}
+  #print table{width:100%;border-collapse:collapse}
+  #print td{padding:.8mm 1.5mm;border-bottom:.5pt solid #ccc;vertical-align:top}
+  #print .pq{width:12mm;text-align:right;font-weight:700}
+  #print .pu{width:20mm;color:#555}
+  #print .pok{width:10mm;border:.5pt solid #999}
+  #print .ptot{margin-top:6mm;font-size:12pt}
+}
+
 /* Móvil: letra y botones más pequeños (la tablet no cambia) */
 @media (max-width:560px){
   .top .wrap{min-height:62px;padding-block:8px;gap:10px}
@@ -283,6 +314,9 @@ button:disabled{cursor:default}
   .pill{height:28px;font-size:13px;padding:0 10px}
   .grid{gap:6px}
   .prov{padding:12px 16px;min-height:0}
+  .provabrir{padding:12px 6px 12px 16px;gap:10px}
+  .pill.imprimir{margin-left:0}
+  .check{width:38px;height:38px;margin-right:12px;font-size:18px}
   .prov .name{font-size:21px}
   .prov .est{font-size:13px;margin-top:2px}
   .status{font-size:10px;padding:4px 8px}
@@ -322,6 +356,7 @@ button:disabled{cursor:default}
 <div class="bar" id="bar" hidden><div class="wrap" id="barin"></div></div>
 <div id="modal"></div>
 <div class="toast" id="toast" role="status" hidden></div>
+<div id="print"></div>
 
 <script>
 'use strict';
@@ -727,12 +762,16 @@ function pintarInicio(){
       ${part ? `<span class="pill part"><i></i>${part} a medias</span>` : ''}
       ${env ? `<span class="pill done"><i></i>${env} enviados</span>` : ''}
       ${totalHoy ? `<span class="pill total">Hoy ≈ ${eurRedondo(totalHoy)}</span>` : ''}
+      <button class="pill imprimir" data-act="imprimir">Imprimir semana</button>
     </div>
-    <div class="grid">${ps.map(p => { const e = estado(p);
-      return `<button class="prov" data-act="abrir" data-prov="${esc(p.proveedor)}">
-        <span class="avatar" style="--c:${color(p.proveedor)}">${esc(iniciales(p.proveedor))}</span>
-        <span class="txt"><span class="name">${esc(bonito(p.proveedor))}</span>${estimado(p)}</span>
-        <span class="status ${e.cls}">${esc(e.txt)}</span></button>`; }).join('')}</div>`;
+    <div class="grid">${ps.map(p => { const e = estado(p), env = enviado(p);
+      return `<div class="prov provcard">
+        <button class="provabrir" data-act="abrir" data-prov="${esc(p.proveedor)}">
+          <span class="avatar" style="--c:${color(p.proveedor)}">${esc(iniciales(p.proveedor))}</span>
+          <span class="txt"><span class="name">${esc(bonito(p.proveedor))}</span>${estimado(p)}</span>
+          <span class="status ${e.cls}">${esc(e.txt)}</span></button>
+        <button class="check ${env ? 'on' : ''}" data-act="marcar" data-prov="${esc(p.proveedor)}" aria-pressed="${!!env}" aria-label="${env ? 'Quitar enviado' : 'Marcar como enviado'}">✓</button>
+      </div>`; }).join('')}</div>`;
 }
 
 function filas(p, d){
@@ -791,14 +830,73 @@ function pintarProv(){
   pintarBarra();
 }
 
+// Abajo: lo que va a costar la compra (y si llega al pedido mínimo) y el botón de enviar. Con
+// WhatsApp abre directamente el chat del proveedor con el pedido escrito; sin WhatsApp abre la
+// ventana para copiar el texto o marcarlo como enviado.
+const waDe = p => String(p.whatsapp || '').replace(/\D/g, '');
+const lineasDe = p => ents(p).flatMap(e => { const d = drafts[dk(p.proveedor, e)]; return d ? lineas(p.proveedor, d) : []; });
+function avisoMinimo(p, t){
+  const m = +p.pedidoMinimo || 0;
+  if (!m) return '';
+  const em = Number.isInteger(m) ? m + ' €' : eur(m);
+  return t >= m ? `Pedido mínimo ${em} ✓` : `Mínimo ${em}: faltan ${eur(m - t)}`;
+}
 function pintarBarra(){
-  const p = prov(ui.prov), n = total(p), env = enviado(p), es = entregas(p);
-  const imp = importe(ents(p).flatMap(e => { const d = drafts[dk(p.proveedor, e)]; return d ? lineas(p.proveedor, d) : []; }), precios());
-  const s = (env ? 'Enviado a las '+hm(env) : es.length > 1 ? es.map(e => cap(DIA[e])+': '+nLin(p.proveedor,e)).join(' · ') : 'Pedido de hoy')
-    + (imp.t ? ' · ≈ '+eur(imp.t) : '');
+  const p = prov(ui.prov), n = total(p), wa = waDe(p), imp = importe(lineasDe(p), precios());
+  const min = avisoMinimo(p, imp.t), falta = min && imp.t < (+p.pedidoMinimo || 0);
   $('#bar').hidden = false;
-  $('#barin').innerHTML = `<div><div class="n">${n} ${n === 1 ? 'producto' : 'productos'}</div><div class="s">${esc(s)}</div></div>
-    <button class="send" data-act="revisar" ${n ? '' : 'disabled'}>Revisar y enviar</button>`;
+  $('#barin').innerHTML = `<div class="est-bar"><div class="n">${imp.t ? '≈ ' + eur(imp.t) : n + (n === 1 ? ' producto' : ' productos')}</div>
+      <div class="s ${falta ? 'falta' : ''}">${esc(min || (imp.t ? n + (n === 1 ? ' producto' : ' productos') + (imp.sin ? ', ' + imp.sin + ' sin precio' : '') : 'Pedido de hoy'))}</div></div>
+    <button class="send" data-act="${wa ? 'whatsapp' : 'revisar'}" ${n ? '' : 'disabled'}>${wa ? WA + 'Enviar por WhatsApp' : 'Enviar pedido'}</button>`;
+}
+
+// ✓ de la pantalla de inicio. Si hay productos puestos, es como "Marcar como enviado" (se apunta
+// en la hoja). Si no hay nada (ej. se pidió por teléfono), solo se marca. Otro toque lo desmarca.
+function marcarEnviado(p){
+  if (enviado(p)){
+    for (const e of ents(p)){ const d = drafts[dk(p.proveedor, e)]; if (d) d.enviado = null; }
+    save(); render(); toast(bonito(p.proveedor) + ': quitado el enviado');
+    return;
+  }
+  if (total(p)) registrar(p);
+  else { draft(p.proveedor, ents(p)[0]).enviado = new Date().toISOString(); save(); }
+  render(); toast(bonito(p.proveedor) + ': marcado como enviado');
+}
+
+/* ---------- imprimir los pedidos de la semana ---------- */
+async function imprimirSemana(){
+  toast('Preparando los pedidos de la semana…');
+  await cargarHistorial();
+  const a = lunes(new Date()), b = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 7);
+  const pr = precios(), orden = provs().map(p => p.proveedor);
+  const peds = new Map();
+  for (const r of todasLasFilas()){
+    const d = new Date(r.f); if (d < a || d >= b) continue;
+    if (!peds.has(r.ped)) peds.set(r.ped, {prov:r.prov, f:String(r.f), ent:r.ent, items:[]});
+    peds.get(r.ped).items.push({producto:r.prod, cantidad:r.cant, unidad:r.uni, id:r.id});
+  }
+  // Lo de hoy que todavía no se ha enviado también sale, marcado
+  for (const p of provs()) for (const e of ents(p)){
+    const d = drafts[dk(p.proveedor, e)]; if (!d || d.enviado) continue;
+    const ls = lineas(p.proveedor, d); if (!ls.length) continue;
+    peds.set('borrador|'+p.proveedor+'|'+e, {prov:p.proveedor, f:new Date().toISOString(), ent:e ? DIA[e] : '', items:ls, borrador:true});
+  }
+  const pos = n => { const i = orden.indexOf(n); return i < 0 ? 999 : i; };
+  const lista = [...peds.values()].sort((x, y) => pos(x.prov) - pos(y.prov) || x.prov.localeCompare(y.prov) || x.f.localeCompare(y.f));
+  const dia = d => d.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
+  let html = `<h1>Pedidos de la semana</h1><p class="psub">Del ${dia(a)} al ${dia(new Date(b - 86400000))} · ${LOCAL}</p>`;
+  if (!lista.length) html += '<p>No hay pedidos esta semana.</p>';
+  let total = 0, prov = null;
+  for (const p of lista){
+    if (p.prov !== prov){ if (prov) html += '</section>'; prov = p.prov; html += `<section><h2>${esc(bonito(prov))}</h2>`; }
+    const t = importe(p.items, pr).t; total += t;
+    html += `<h3>${p.borrador ? 'SIN ENVIAR todavía' : 'Enviado el ' + esc(fechaLarga(p.f)) + ' a las ' + esc(hm(p.f))}${p.ent ? ' · entrega ' + esc(p.ent) : ''}${t ? ' · ≈ ' + eur(t) : ''}</h3>
+      <table>${p.items.map(i => `<tr><td class="pq">${fmtQ(i.cantidad)}</td><td class="pu">${esc(i.unidad || '')}</td><td>${esc(cap(i.producto))}</td><td class="pok"></td></tr>`).join('')}</table>`;
+  }
+  if (prov) html += '</section>';
+  if (total) html += `<p class="ptot">Total aproximado de la semana: <b>${eur(total)}</b> sin IVA</p>`;
+  $('#print').innerHTML = html;
+  setTimeout(() => window.print(), 100);
 }
 
 function setQ(id, v){
@@ -878,7 +976,7 @@ function revisar(){
   $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="rt">
     <h2 id="rt">Pedido a ${esc(bonito(p.proveedor))}</h2>
     <p class="muted">${wa ? 'Puedes cambiar el texto antes de enviarlo.' : 'Este proveedor no tiene WhatsApp. Copia el texto y mándalo como sueles.'}</p>
-    ${imp.t ? `<p class="importe">Importe aproximado: <b>${eur(imp.t)}</b> sin IVA${imp.sin ? ` <span>(${imp.sin} ${imp.sin === 1 ? 'producto' : 'productos'} sin precio)</span>` : ''}</p>` : ''}
+    ${imp.t ? `<p class="importe">Importe aproximado: <b>${eur(imp.t)}</b> sin IVA${imp.sin ? ` <span>(${imp.sin} ${imp.sin === 1 ? 'producto' : 'productos'} sin precio)</span>` : ''}${avisoMinimo(p, imp.t) ? `<br><span>${esc(avisoMinimo(p, imp.t))}</span>` : ''}</p>` : ''}
     <textarea class="msg" id="msg" aria-label="Mensaje del pedido">${esc(texto(p))}</textarea>
     <div class="acts">
       ${wa ? `<button class="wa" data-r="wa">${WA}Enviar por WhatsApp</button>` : ''}
@@ -902,7 +1000,8 @@ function registrar(p){
   const ahora = new Date().toISOString();
   for (const e of ents(p)){
     const d = drafts[dk(p.proveedor, e)]; if (!d) continue;
-    const its = lineas(p.proveedor, d); if (!its.length) continue;
+    const pr = precios();
+    const its = lineas(p.proveedor, d).map(x => Object.assign({}, x, {precio: pr[x.id] || ''})); if (!its.length) continue;
     d.enviado = ahora;
     cola.push({accion:'pedido', pedido:p.proveedor.replace(/\W+/g,'').slice(0,12)+'-'+(e||'U')+'-'+Date.now().toString(36), ts:ahora,
       proveedor:p.proveedor, entrega:e ? DIA[e] : '', dispositivo:'Tablet', items:its});
@@ -919,6 +1018,8 @@ document.addEventListener('click', e => {
   if (a === 'abrir'){ ui = {vista:'prov', prov:b.dataset.prov, entrega:'', buscar:'', solo:false}; render(); scrollTo(0,0); return; }
   if (a === 'hist'){ ui.vista = 'hist'; render(); scrollTo(0,0); cargarHistorial(); return; }
   if (a === 'cambios'){ verCambios(); return; }
+  if (a === 'marcar'){ const p = prov(b.dataset.prov); if (p) marcarEnviado(p); return; }
+  if (a === 'imprimir'){ imprimirSemana(); return; }
   if (a === 'cambios-ok'){
     const visto = store.get('pp.cambiosVistos', {});
     for (const c of Object.values(cambiosRecientes(30))) visto[c.id+'|'+c.fecha] = 1;
@@ -957,6 +1058,10 @@ document.addEventListener('click', e => {
     else { b.dataset.ok = '1'; b.textContent = '¿Vaciar todo? Toca otra vez'; setTimeout(() => { if (b.isConnected){ delete b.dataset.ok; b.textContent = 'Vaciar'; } }, 3000); }
   }
   else if (a === 'revisar') revisar();
+  else if (a === 'whatsapp'){
+    window.open('https://wa.me/' + waDe(p) + '?text=' + encodeURIComponent(texto(p)), '_blank');
+    registrar(p); render(); toast('Pedido abierto en WhatsApp');
+  }
 });
 document.addEventListener('input', e => {
   const k = e.target.dataset && e.target.dataset.otro;
