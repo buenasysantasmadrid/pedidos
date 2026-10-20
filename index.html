@@ -238,6 +238,11 @@ button:disabled{cursor:default}
 .cpre{flex:none;text-align:right;display:flex;flex-direction:column;gap:3px;font-size:15px}
 .hgasto{margin-top:4px;font-weight:700;color:var(--accent)}
 .hgastot{font-size:16px}.hgastot small{color:var(--soft);font-size:13px}
+.facbtn{margin:22px 0 6px}
+.facs .cpre button{height:42px;padding:0 14px;border-radius:12px;font-weight:700;font-size:15px;background:var(--accent-soft);color:var(--accent);border:0}
+.facs .cpre button:disabled{opacity:.5}
+.facs .ok{color:var(--accent);font-weight:700}
+.facs .falta{color:var(--danger);font-weight:700}
 .addotro{grid-column:1/-1;justify-self:start;height:52px;padding:0 20px;margin-top:2px;border:1px dashed var(--accent);border-radius:14px;background:transparent;color:var(--accent);font-weight:700;font-size:17px}
 .hint .hab{color:var(--accent);font-weight:600}
 .search,.chipbtn,.back,.tabs,.histbtn{box-shadow:none;border:1px solid var(--line);border-radius:var(--r,4px);background-color:var(--card)}
@@ -826,7 +831,8 @@ function pintarProv(){
       <button class="chipbtn" data-act="solo" aria-pressed="${ui.solo}">Solo lo pedido</button>
       <button class="chipbtn danger" data-act="vaciar">Vaciar</button>
     </div>
-    <div class="list">${filas(p, d)}</div>`;
+    <div class="list">${filas(p, d)}</div>
+    <div class="facbtn"><button class="chipbtn" data-act="facturas">📄 Leer precios de una factura</button></div>`;
   pintarBarra();
 }
 
@@ -958,6 +964,55 @@ function verCambios(){
   </div></div>`;
 }
 
+/* ---------- leer los precios de una factura que ya está en Drive ---------- */
+// Las facturas escaneadas en el Cierre de caja se guardan en Drive. Si sus precios no llegaron
+// (o salieron mal), aquí se eligen y el programa del cierre las vuelve a leer.
+const URL_CIERRE = 'https://script.google.com/macros/s/AKfycbyrfOE73JqgjTXAEaLetRz8aJg1Ldb-Du4dsqGgW34H-zgwLSJMrAkSKApiTCoz6t7m_A/exec';
+async function llamarCierre(body){
+  const r = await fetch(URL_CIERRE, {method:'POST', body: JSON.stringify(body)});
+  const j = await r.json(); if (!j.ok) throw new Error(j.error || 'error'); return j;
+}
+let F = {};
+function verFacturas(n){
+  F = {prov:n, lista:null, error:'', todas:false, leyendo:null, res:{}};
+  pintarFacturas();
+  llamarCierre({accionFacturasPedidos:1, proveedor:n})
+    .then(j => { F.lista = j.facturas || []; })
+    .catch(e => { F.error = 'No se han podido ver las facturas de Drive (' + e.message + '). Revisa el wifi y prueba otra vez.'; })
+    .then(() => { if (F.prov === n) pintarFacturas(); });
+}
+function pintarFacturas(){
+  const lista = (F.lista || []).filter(x => F.todas || x.deEste), otras = (F.lista || []).some(x => !x.deEste);
+  const estado = x => F.res[x.id] ? F.res[x.id] : x.conPrecios ? '<span class="ok">✓ precios pasados</span>' : '<span class="falta">⚠ faltan precios</span>';
+  const cuerpo = F.error ? `<p class="muted">${esc(F.error)}</p>`
+    : !F.lista ? '<p class="muted">Buscando las facturas en Drive…</p>'
+    : `${lista.length ? `<ul class="cambios facs">${lista.map(x => `<li>
+        <div><b>${esc(fechaLarga(x.fecha))}</b><small>${esc(x.nombre)} · <a href="${esc(x.url)}" target="_blank" rel="noopener">ver</a></small></div>
+        <div class="cpre"><span>${F.leyendo === x.id ? 'Leyendo… tarda unos 30 segundos' : estado(x)}</span>
+          <button data-act="leerfac" data-fid="${esc(x.id)}" ${F.leyendo ? 'disabled' : ''}>${x.conPrecios ? 'Volver a leer' : 'Leer'}</button></div></li>`).join('')}</ul>`
+      : `<p class="muted">${F.todas ? 'No hay facturas' : 'No hay facturas de ' + esc(bonito(F.prov))} en los últimos 2 meses.</p>`}
+      ${!F.todas && otras ? '<div class="acts"><button data-act="facturas-todas">No está: ver las de todos los proveedores</button></div>' : ''}`;
+  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ft">
+    <h2 id="ft">Facturas de ${esc(F.todas ? 'todos' : bonito(F.prov))}</h2>
+    <p class="muted">Las escaneadas en el cierre de caja (últimos 2 meses). Elige una para pasar sus precios.</p>
+    ${cuerpo}
+    <div class="acts"><button data-act="cerrar-dlg">Cerrar</button></div>
+  </div></div>`;
+}
+function leerFactura(id){
+  const x = (F.lista || []).find(f => f.id === id); if (!x || F.leyendo) return;
+  F.leyendo = id; pintarFacturas();
+  llamarCierre({accionPreciosDesdeDrive:1, idArchivo:id, proveedor:F.prov, reemplazar:!!x.conPrecios})
+    .then(j => {
+      F.res[id] = j.repetida ? '<span class="ok">✓ ya estaban pasados</span>'
+        : `<span class="ok">✓ ${j.filas} ${j.filas === 1 ? 'precio' : 'precios'} pasados${j.filas ? ' (' + j.emparejadas + ' con su producto)' : ''}</span>`;
+      x.conPrecios = x.conPrecios || j.filas || 1;
+      sincronizar();
+    })
+    .catch(e => { F.res[id] = `<span class="falta">✗ ${esc(e.message)}</span>`; })
+    .then(() => { F.leyendo = null; if ($('#modal .facs')) pintarFacturas(); });
+}
+
 /* ---------- enviar ---------- */
 function texto(p){
   const partes = [];
@@ -1025,6 +1080,10 @@ document.addEventListener('click', e => {
     for (const c of Object.values(cambiosRecientes(30))) visto[c.id+'|'+c.fecha] = 1;
     store.set('pp.cambiosVistos', visto); cerrar(); render(); return;
   }
+  if (a === 'facturas'){ verFacturas(ui.prov); return; }
+  if (a === 'facturas-todas'){ F.todas = true; pintarFacturas(); return; }
+  if (a === 'leerfac'){ leerFactura(b.dataset.fid); return; }
+  if (a === 'cerrar-dlg'){ cerrar(); return; }
   if (ui.vista === 'hist'){ accionHist(a, b); return; }
   if (ui.vista !== 'prov') return;
   const p = prov(ui.prov), d = draft(p.proveedor, ui.entrega);

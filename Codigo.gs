@@ -57,6 +57,10 @@ function doPost(e) {
     try { return salida(guardarPrecios(d)); }
     catch (err) { return salida({ ok: false, error: String(err) }); }
   }
+  if (d.accion === 'facturasConPrecios') {
+    try { return salida({ ok: true, facturas: facturasConPrecios() }); }
+    catch (err) { return salida({ ok: false, error: String(err) }); }
+  }
   if (d.accion !== 'pedido') return salida({ ok: false, error: 'Acción desconocida' });
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -280,9 +284,21 @@ function guardarPrecios(d) {
   try {
     const ss = SpreadsheetApp.getActive();
     const hoja = hojaOCrear(HOJA_PRECIOS, COL_PRECIOS);
-    const previas = hoja.getLastRow() > 1 ? hoja.getRange(2, 1, hoja.getLastRow() - 1, COL_PRECIOS.length).getValues() : [];
+    let previas = hoja.getLastRow() > 1 ? hoja.getRange(2, 1, hoja.getLastRow() - 1, COL_PRECIOS.length).getValues() : [];
     // La misma factura escaneada otra vez no se apunta dos veces
-    const esta = r => r[1] === d.proveedor && (d.factura ? String(r[2]) === String(d.factura) : !r[2] && fechaISO(r[0]) === fecha);
+    const fotoId = idDrive(d.foto);
+    const esta = r => (fotoId && idDrive(r[11]) === fotoId) ||
+      (r[1] === d.proveedor && (d.factura ? String(r[2]) === String(d.factura) : !r[2] && fechaISO(r[0]) === fecha));
+    // "Volver a leer" (botón de la app): se quitan las líneas que había de esa factura
+    if (d.reemplazar) {
+      const quedan = previas.filter(r => !esta(r));
+      if (quedan.length < previas.length) {
+        // Se reescriben las que quedan (borrar todas las filas de golpe no se puede)
+        hoja.getRange(2, 1, previas.length, COL_PRECIOS.length).clearContent();
+        if (quedan.length) hoja.getRange(2, 1, quedan.length, COL_PRECIOS.length).setValues(quedan);
+      }
+      previas = quedan;
+    }
     if (previas.some(esta)) return { ok: true, filas: 0, repetida: true };
 
     // Productos de la hoja y su fila, y el último precio conocido de cada uno
@@ -315,6 +331,25 @@ function guardarPrecios(d) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// ID del archivo de Drive de un enlace de factura (".../file/d/<ID>/view")
+function idDrive(url) {
+  const m = /\/d\/([\w-]{20,})/.exec(String(url || '')) || /[?&]id=([\w-]{20,})/.exec(String(url || ''));
+  return m ? m[1] : '';
+}
+
+// Facturas que ya tienen sus precios apuntados (para el botón "Leer precios de una factura",
+// que lista las facturas de Drive desde la app de Cierre de caja): [{ proveedor, factura, fotoId, filas }]
+function facturasConPrecios() {
+  const hoja = SpreadsheetApp.getActive().getSheetByName(HOJA_PRECIOS);
+  if (!hoja || hoja.getLastRow() < 2) return [];
+  const res = {};
+  for (const r of hoja.getRange(2, 1, hoja.getLastRow() - 1, COL_PRECIOS.length).getValues()) {
+    const fotoId = idDrive(r[11]), k = fotoId || r[1] + '|' + r[2];
+    (res[k] = res[k] || { proveedor: r[1], factura: String(r[2]), fotoId, filas: 0 }).filas++;
+  }
+  return Object.values(res);
 }
 
 // Último cambio de precio de cada producto en los últimos N días (para el aviso de la app)
