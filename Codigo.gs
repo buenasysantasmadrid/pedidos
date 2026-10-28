@@ -45,6 +45,9 @@ function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (err) { return salida({ ok: false, error: 'Datos no válidos' }); }
   if (CLAVE && d.clave !== CLAVE) return salida({ ok: false, error: 'Clave incorrecta' });
+  if (d.claveServidor !== CLAVE_PEDIDOS && !accesoValido(d.acceso)) {
+    return salida({ ok: false, sinSesion: true, error: 'Hay que entrar con una cuenta autorizada de Buenas y Santas.' });
+  }
   if (d.accion === 'catalogo') {
     try { return salida(Object.assign({ ok: true }, leerCatalogo())); }
     catch (err) { return salida({ ok: false, error: String(err) }); }
@@ -87,6 +90,20 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ---------- Acceso ----------
+ * Solo entran las cuentas de Google autorizadas. La app inicia sesión con Google en el script
+ * del Cierre de caja (que comprueba la cuenta) y recibe un "acceso" ("email|vence|firma")
+ * firmado con CLAVE_PEDIDOS (archivo ClavePedidos.js, que no está en GitHub). Aquí solo se
+ * comprueba la firma y que no haya vencido. El Cierre de caja, cuando llama a este script,
+ * manda la misma clave como claveServidor. */
+function accesoValido(acceso) {
+  const p = String(acceso || '').split('|');
+  if (p.length !== 3 || !(Number(p[1]) > Date.now())) return false;
+  const firma = Utilities.computeHmacSha256Signature(p[0] + '|' + p[1], CLAVE_PEDIDOS)
+    .map(b => ('0' + (b & 255).toString(16)).slice(-2)).join('');
+  return firma === p[2];
 }
 
 function salida(obj) {
