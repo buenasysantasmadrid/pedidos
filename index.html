@@ -240,6 +240,26 @@ button:disabled{cursor:default}
 .hgasto{margin-top:4px;font-weight:700;color:var(--accent)}
 .hgastot{font-size:16px}.hgastot small{color:var(--soft);font-size:13px}
 .facbtn{margin:22px 0 6px}
+.aviso.fuerte{border-color:var(--danger);background:#f7e3df;color:var(--danger)}
+.aviso.fuerte b{background:var(--danger)}
+.sube.fuerte,.baja.fuerte{padding:1px 7px;border-radius:6px;background:var(--danger);color:#fff}
+.pfil{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.pfil .lbl{font-weight:700;color:var(--soft);font-size:14px}
+.pnota{color:var(--soft);font-size:15px;margin:16px 0 8px}
+.pres{margin:10px 0 12px;padding:12px 16px;border-radius:14px;background:#f7e3df;color:var(--danger);font-weight:700}
+.plist{list-style:none;margin:12px 0 24px;padding:0;display:grid;gap:8px}
+.plist > li{background:var(--card);border:1px solid var(--line);border-radius:14px}
+.plist > li.fuerte{border:2px solid var(--danger);background:#fdf3f1}
+.plist .pbtn{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:12px 16px;text-align:left}
+.plist .pbtn b{font-size:17px}
+.plist small{display:block;color:var(--soft);font-size:14px;margin-top:3px}
+.plist .tagf{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;background:var(--danger);color:#fff;font-size:13px;font-weight:700}
+.plist .cpre b{font-size:18px}
+.plist .cpre .ref{color:var(--soft);font-size:14px}
+.phist{margin:0;padding:0 16px 12px;list-style:none;border-top:1px solid var(--line)}
+.phist li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.phist li:last-child{border-bottom:0}
+.phist li.res{color:var(--soft);font-size:14px}
 .facs .cpre button{height:42px;padding:0 14px;border-radius:12px;font-weight:700;font-size:15px;background:var(--accent-soft);color:var(--accent);border:0}
 .facs .cpre button:disabled{opacity:.5}
 .facs .ok{color:var(--accent);font-weight:700}
@@ -457,7 +477,11 @@ function gastoHabitual(pr){
   return out;
 }
 const eurRedondo = n => n >= 100 ? Math.round(n).toLocaleString('es-ES') + ' €' : eur(n);
-const flecha = c => c.cambio > 0 ? `<span class="sube">↑ ${String(Math.abs(c.cambio)).replace('.', ',')} %</span>` : `<span class="baja">↓ ${String(Math.abs(c.cambio)).replace('.', ',')} %</span>`;
+// A partir de este % de diferencia, el cambio de precio se marca en rojo y avisa al abrir la app
+const UMBRAL = 15;
+const pctTxt = v => String(Math.abs(v)).replace('.', ',') + ' %';
+const flechaPct = v => `<span class="${v > 0 ? 'sube' : 'baja'}${Math.abs(v) >= UMBRAL ? ' fuerte' : ''}">${v > 0 ? '↑' : '↓'} ${pctTxt(v)}</span>`;
+const flecha = c => flechaPct(c.cambio);
 function unidad(p){
   if (p.unidad && !/^pack/i.test(p.unidad)) return p.unidad;
   const t = String(p.habitual||'').replace(/^[\d\s.,\/]+/, '').replace(/c\/\s*men[uú]/i,'').trim();
@@ -557,7 +581,7 @@ async function llamar(body){
 async function sincronizar(){
   try {
     const j = await llamar({accion:'catalogo'});
-    cat = {proveedores:j.proveedores||[], productos:j.productos||[], ultimos:j.ultimos||{}, cambios:j.cambios||[]}; store.set('pp.cat3', cat);
+    cat = {proveedores:j.proveedores||[], productos:j.productos||[], ultimos:j.ultimos||{}, cambios:j.cambios||[], historialPrecios:j.historialPrecios}; store.set('pp.cat3', cat);
     hoja = 'ok';
     if (document.activeElement?.tagName !== 'INPUT') render();
   } catch(e){ if (!cat.proveedores.length){ hoja = 'error'; render(); } }
@@ -575,6 +599,7 @@ const RANGOS = [['semana','Esta semana'],['pasada','Semana pasada'],['mes','Últ
 let H = {filas: store.get('pp.hist', []), cargando:false, error:false, cargadoAt:null,
   modo:'pedidos', rango:'mes', prov:'', q:'', desde:'', hasta:'', abierto:null};
 
+let P = {ref:'anterior', q:'', prov:'', fuertes:false, abierto:null};
 const isoDia = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const fechaLarga = iso => { const d = new Date(iso); return cap(d.toLocaleDateString('es-ES',{weekday:'short', day:'numeric', month:'short'}).replace(/\./g,'')); };
 function lunes(d){ const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); const w = (x.getDay()+6)%7; x.setDate(x.getDate()-w); return x; }
@@ -755,6 +780,7 @@ function accionHist(a, b){
 }
 document.addEventListener('change', e => {
   if (e.target.id === 'h-prov'){ H.prov = e.target.value; pintarHist(); }
+  else if (e.target.id === 'p-prov'){ P.prov = e.target.value; $('#plista').innerHTML = listaPrecios(); }
   else if (e.target.id === 'h-desde'){ H.desde = e.target.value; pintarHist(); }
   else if (e.target.id === 'h-hasta'){ H.hasta = e.target.value; pintarHist(); }
 });
@@ -776,10 +802,13 @@ function render(){
     $('#top').innerHTML = `<button class="back" data-act="volver">${BACK}Proveedores</button><span class="date">${esc(fecha)}</span>`;
   else if (ui.vista === 'hist')
     $('#top').innerHTML = `<button class="back" data-act="volver">${BACK}Proveedores</button><h1 class="title" style="font-size:28px">Pedidos anteriores</h1>`;
+  else if (ui.vista === 'precios')
+    $('#top').innerHTML = `<button class="back" data-act="volver">${BACK}Proveedores</button><h1 class="title" style="font-size:28px">Precios</h1>`;
   else
-    $('#top').innerHTML = `<h1 class="title">Pedidos</h1><span class="date">${esc(fecha)}</span><button class="histbtn" data-act="hist">${HIST}<span>Pedidos anteriores</span></button>`;
+    $('#top').innerHTML = `<h1 class="title">Pedidos</h1><span class="date">${esc(fecha)}</span><button class="histbtn" data-act="precios"><b aria-hidden="true">€</b><span>Precios</span></button><button class="histbtn" data-act="hist">${HIST}<span>Pedidos anteriores</span></button>`;
   if (ui.vista === 'prov' && prov(ui.prov)) pintarProv();
   else if (ui.vista === 'hist') pintarHist();
+  else if (ui.vista === 'precios') pintarPrecios();
   else { ui.vista = 'inicio'; pintarInicio(); }
 }
 
@@ -801,7 +830,13 @@ function pintarInicio(){
   }
   const env = ps.filter(p => enviado(p)).length, part = ps.filter(p => total(p) && !enviado(p)).length;
   const visto = store.get('pp.cambiosVistos', {});
-  const nuevos = Object.values(cambiosRecientes(30)).filter(c => !visto[c.id+'|'+c.fecha]).length;
+  // Cambios fuertes de precio sin ver: aviso en rojo. El resto de cambios del último mes, aviso normal.
+  const fuertes = seriesPrecios().filter(x => x.fuerte && x.ult.f >= isoDia(new Date(Date.now() - 45*86400000)) && !visto[x.id+'|'+x.ult.f]);
+  const yaF = new Set(fuertes.map(x => x.id));
+  const nuevos = Object.values(cambiosRecientes(30)).filter(c => !visto[c.id+'|'+c.fecha] && !yaF.has(c.id)).length;
+  const fuerteTxt = () => { const x = fuertes[0], v = x.vs.anterior != null && Math.abs(x.vs.anterior) >= UMBRAL ? x.vs.anterior : x.vs.media;
+    return fuertes.length === 1 ? `⚠ ${cap(x.nombre)} ha ${v > 0 ? 'subido' : 'bajado'} un ${pctTxt(v)}`
+      : `⚠ ${fuertes.length} productos han cambiado mucho de precio: ${fuertes.slice(0, 2).map(x => cap(x.nombre)).join(', ')}${fuertes.length > 2 ? '…' : ''}`; };
   // Estimación de la compra: lo que lleva el pedido de hoy o, si no hay nada, lo que se suele gastar
   const pr = precios(), habitual = gastoHabitual(pr);
   const hoyEur = p => importe(ents(p).flatMap(e => { const d = drafts[dk(p.proveedor, e)]; return d ? lineas(p.proveedor, d) : []; }), pr).t;
@@ -810,7 +845,8 @@ function pintarInicio(){
     return t ? `<span class="est">${enviado(p) ? 'Enviado' : 'Pedido'} ≈ ${eurRedondo(t)}</span>`
       : habitual[p.proveedor] ? `<span class="est suele">Normalmente ≈ ${eurRedondo(habitual[p.proveedor])}</span>` : ''; };
   $('#main').innerHTML = `
-    ${nuevos ? `<button class="aviso" data-act="cambios"><span>${nuevos} ${nuevos === 1 ? 'producto ha cambiado' : 'productos han cambiado'} de precio</span><b>Ver</b></button>` : ''}
+    ${fuertes.length ? `<button class="aviso fuerte" data-act="precios"><span>${esc(fuerteTxt())}</span><b>Ver</b></button>` : ''}
+    ${nuevos ? `<button class="aviso" data-act="precios"><span>${nuevos} ${nuevos === 1 ? 'producto ha cambiado' : 'productos han cambiado'} de precio</span><b>Ver</b></button>` : ''}
     <div class="summary">
       <span class="pill"><i></i>${ps.length} proveedores</span>
       ${part ? `<span class="pill part"><i></i>${part} a medias</span>` : ''}
@@ -1000,17 +1036,81 @@ function teclado(id){
 }
 const cerrar = () => { $('#modal').innerHTML = ''; };
 
-/* ---------- cambios de precio ---------- */
-function verCambios(){
-  const cs = Object.values(cambiosRecientes(30)).sort((a,b) => b.fecha.localeCompare(a.fecha) || Math.abs(b.cambio) - Math.abs(a.cambio));
-  $('#modal').innerHTML = `<div class="scrim" data-act="cerrar"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="ct">
-    <h2 id="ct">Cambios de precio</h2>
-    <p class="muted">Último mes, según las facturas escaneadas en el cierre de caja. Precios sin IVA.</p>
-    <ul class="cambios">${cs.map(c => `<li>
-      <div><b>${esc(cap(c.producto))}</b><small>${esc(bonito(c.proveedor))} · ${esc(fechaLarga(c.fecha))}${c.foto ? ` · <a href="${esc(c.foto)}" target="_blank" rel="noopener">ver factura</a>` : ''}</small></div>
-      <div class="cpre"><span>${eur(c.antes)} → <b>${eur(c.ahora)}</b></span>${flecha(c)}</div></li>`).join('')}</ul>
-    <div class="acts"><button data-act="cambios-ok">Entendido</button></div>
-  </div></div>`;
+/* ---------- pantalla de precios ---------- */
+// Historial de precios de cada producto (de las facturas): {id, nombre, prov, serie:[{f, p}] por fecha,
+// ult, y la diferencia en % con la factura anterior, hace una semana, hace un mes y la media de 3 meses}
+const REFS = [['anterior','Factura anterior'],['semana','Hace 1 semana'],['mes','Hace 1 mes'],['media','Media 3 meses']];
+function seriesPrecios(){
+  // Si la hoja todavía no manda el historial, se usa lo que hay: precio anterior y actual
+  const filas = cat.historialPrecios || (cat.cambios || []).flatMap(c => [['', c.proveedor, c.id, c.producto, c.antes], [c.fecha, c.proveedor, c.id, c.producto, c.ahora]]);
+  const porId = new Map(), prodDe = {};
+  for (const x of cat.productos) prodDe[x.id] = x;
+  for (const [f, pv, id, prod, p] of filas){
+    if (!id || !(+p > 0)) continue;
+    if (!porId.has(id)) porId.set(id, {id, nombre:(prodDe[id] || {}).producto || prod, prov:(prodDe[id] || {}).proveedor || pv, dias:{}});
+    const d = porId.get(id).dias; (d[f] = d[f] || []).push(+p);
+  }
+  const menos = (iso, n) => { const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() - n); return isoDia(d); };
+  const pct = (a, b) => b ? Math.round((a - b) / b * 1000) / 10 : null;
+  const out = [];
+  for (const x of porId.values()){
+    x.serie = Object.entries(x.dias).sort((a, b) => a[0].localeCompare(b[0])).map(([f, ps]) => ({f, p:ps.reduce((s, v) => s + v, 0) / ps.length}));
+    delete x.dias;
+    const ult = x.ult = x.serie[x.serie.length - 1], antes = x.serie.slice(0, -1);
+    const hasta = lim => { for (let i = antes.length - 1; i >= 0; i--) if (antes[i].f <= lim) return antes[i].p; return null; };
+    const med = ult.f ? antes.filter(e => e.f && e.f >= menos(ult.f, 91)) : [];
+    x.media = med.length ? med.reduce((s, e) => s + e.p, 0) / med.length : null;
+    x.ref = {anterior: antes.length ? antes[antes.length - 1].p : null, semana: ult.f ? hasta(menos(ult.f, 7)) : null,
+             mes: ult.f ? hasta(menos(ult.f, 30)) : null, media: x.media};
+    x.vs = {}; for (const [k] of REFS) x.vs[k] = x.ref[k] ? pct(ult.p, x.ref[k]) : null;
+    x.fuerte = [x.vs.anterior, x.vs.media].some(v => v != null && Math.abs(v) >= UMBRAL);
+    out.push(x);
+  }
+  return out;
+}
+// Al entrar en Precios se dan por vistos los cambios (deja de salir el aviso del inicio)
+function marcarPreciosVistos(){
+  const visto = store.get('pp.cambiosVistos', {});
+  for (const c of Object.values(cambiosRecientes(60))) visto[c.id+'|'+c.fecha] = 1;
+  for (const x of seriesPrecios()) if (x.ult.f) visto[x.id+'|'+x.ult.f] = 1;
+  store.set('pp.cambiosVistos', visto);
+}
+function listaPrecios(){
+  const q = plano(P.q.trim()), refTxt = REFS.find(r => r[0] === P.ref)[1].toLowerCase();
+  const todas = seriesPrecios();
+  let xs = todas.filter(x => (!P.prov || x.prov === P.prov) && (!q || plano(x.nombre).includes(q)));
+  const marcado = x => x.fuerte || (x.vs[P.ref] != null && Math.abs(x.vs[P.ref]) >= UMBRAL);
+  if (P.fuertes) xs = xs.filter(marcado);
+  const peso = x => x.vs[P.ref] == null ? -1 : Math.abs(x.vs[P.ref]);
+  xs.sort((a, b) => marcado(b) - marcado(a) || peso(b) - peso(a) || b.ult.f.localeCompare(a.ult.f));
+  if (!xs.length) return `<p class="empty">${todas.length ? 'No hay productos con estos filtros.' : 'Todavía no hay precios. Llegan al escanear las facturas en el cierre de caja.'}</p>`;
+  return `<ul class="plist">${xs.map(x => { const v = x.vs[P.ref], open = P.abierto === x.id, f = marcado(x);
+    const ps = x.serie.map(e => e.p), hist = x.serie.slice(-15).reverse();
+    return `<li class="${f ? 'fuerte' : ''}"><button class="pbtn" data-act="p-abrir" data-id="${esc(x.id)}" aria-expanded="${open}">
+      <div><b>${esc(cap(x.nombre))}</b><small>${esc(bonito(x.prov))}${x.ult.f ? ' · ' + esc(fechaLarga(x.ult.f)) : ''}</small>${f ? '<span class="tagf">Cambio fuerte</span>' : ''}</div>
+      <div class="cpre"><b>${eur(x.ult.p)}</b>${v != null ? `<span class="ref">${esc(refTxt)}: ${eur(x.ref[P.ref])}</span>${flechaPct(v)}` : `<span class="ref">sin datos de ${esc(refTxt)}</span>`}</div></button>
+      ${open ? `<ul class="phist"><li class="res"><span>${x.media ? `Media 3 meses: <b>${eur(x.media)}</b> · ` : ''}Mín. ${eur(Math.min(...ps))} · Máx. ${eur(Math.max(...ps))}</span></li>
+        ${hist.map((e, i) => { const prev = hist[i + 1], c = prev ? Math.round((e.p - prev.p) / prev.p * 1000) / 10 : 0;
+          return `<li><span>${e.f ? esc(fechaLarga(e.f)) : 'Antes'}</span><span>${eur(e.p)} ${c ? flechaPct(c) : ''}</span></li>`; }).join('')}</ul>` : ''}</li>`; }).join('')}</ul>`;
+}
+function pintarPrecios(){
+  $('#bar').hidden = true;
+  const todas = seriesPrecios(), nF = todas.filter(x => x.fuerte).length;
+  const orden = n => { const i = provs().findIndex(p => p.proveedor === n); return i < 0 ? 999 : i; };
+  const provsP = [...new Set(todas.map(x => x.prov))].sort((a, b) => orden(a) - orden(b));
+  $('#main').innerHTML = `
+    <p class="pnota">Precios sin IVA, de las facturas escaneadas en el cierre de caja. En rojo, los que han cambiado un ${UMBRAL} % o más frente a la factura anterior o a la media de 3 meses. Toca un producto para ver su historial.</p>
+    ${nF ? `<div class="pres">⚠ ${nF} ${nF === 1 ? 'producto con un cambio fuerte' : 'productos con cambios fuertes'} de precio</div>` : ''}
+    <div class="pfil">
+      <span class="lbl">Comparar el último precio con:</span>
+      <div class="seg">${REFS.map(([k, t]) => `<button data-act="p-ref" data-r="${k}" aria-pressed="${P.ref === k}">${t}</button>`).join('')}</div>
+      <div class="hrow">
+        <input class="search" id="p-q" type="search" placeholder="Buscar producto" value="${esc(P.q)}" autocomplete="off">
+        <select class="sel" id="p-prov"><option value="">Todos los proveedores</option>${provsP.map(p => `<option value="${esc(p)}" ${P.prov === p ? 'selected' : ''}>${esc(bonito(p))}</option>`).join('')}</select>
+        <button class="chipbtn ${P.fuertes ? '' : 'danger'}" data-act="p-fuertes" aria-pressed="${P.fuertes}">Solo cambios fuertes</button>
+      </div>
+    </div>
+    <div id="plista">${listaPrecios()}</div>`;
 }
 
 /* ---------- leer los precios de una factura que ya está en Drive ---------- */
@@ -1121,14 +1221,12 @@ document.addEventListener('click', e => {
   if (a === 'volver'){ ui.vista = 'inicio'; ui.buscar = ''; ui.solo = false; render(); scrollTo(0,0); return; }
   if (a === 'abrir'){ ui = {vista:'prov', prov:b.dataset.prov, entrega:'', buscar:'', solo:false}; render(); scrollTo(0,0); return; }
   if (a === 'hist'){ ui.vista = 'hist'; render(); scrollTo(0,0); cargarHistorial(); return; }
-  if (a === 'cambios'){ verCambios(); return; }
+  if (a === 'precios'){ ui.vista = 'precios'; P.abierto = null; marcarPreciosVistos(); render(); scrollTo(0,0); return; }
+  if (a === 'p-ref'){ P.ref = b.dataset.r; pintarPrecios(); return; }
+  if (a === 'p-fuertes'){ P.fuertes = !P.fuertes; pintarPrecios(); return; }
+  if (a === 'p-abrir'){ P.abierto = P.abierto === b.dataset.id ? null : b.dataset.id; $('#plista').innerHTML = listaPrecios(); return; }
   if (a === 'marcar'){ const p = prov(b.dataset.prov); if (p) marcarEnviado(p); return; }
   if (a === 'imprimir'){ imprimirSemana(); return; }
-  if (a === 'cambios-ok'){
-    const visto = store.get('pp.cambiosVistos', {});
-    for (const c of Object.values(cambiosRecientes(30))) visto[c.id+'|'+c.fecha] = 1;
-    store.set('pp.cambiosVistos', visto); cerrar(); render(); return;
-  }
   if (a === 'facturas'){ verFacturas(ui.prov); return; }
   if (a === 'facturas-todas'){ F.todas = true; pintarFacturas(); return; }
   if (a === 'leerfac'){ leerFactura(b.dataset.fid); return; }
@@ -1181,6 +1279,7 @@ document.addEventListener('input', e => {
     pintarBarra();
     return;
   }
+  if (e.target.id === 'p-q'){ P.q = e.target.value; $('#plista').innerHTML = listaPrecios(); return; }
   if (e.target.id !== 'buscar') return;
   ui.buscar = e.target.value;
   const p = prov(ui.prov); $('.list').innerHTML = filas(p, draft(p.proveedor, ui.entrega));

@@ -248,7 +248,7 @@ function leerCatalogo() {
   const productos = leerTabla(HOJA_PROD)
     .filter(p => p.producto && p.proveedor && activo(p) && nombre[clave(p.proveedor)])
     .map(p => Object.assign(p, { proveedor: nombre[clave(p.proveedor)], precio: numero(p.precio) || '' }));
-  return { proveedores, productos, ultimos: ultimosPedidos(), cambios: cambiosDePrecio(60), actualizado: new Date().toISOString() };
+  return { proveedores, productos, ultimos: ultimosPedidos(), cambios: cambiosDePrecio(60), historialPrecios: historialPrecios(400), actualizado: new Date().toISOString() };
 }
 
 // Último pedido de cada proveedor (y de cada día de entrega), para "Repetir último"
@@ -384,6 +384,20 @@ function cambiosDePrecio(dias) {
   }
   // Solo cuenta si la factura más reciente de ese producto cambió el precio
   return Object.values(res).filter(c => c.cambio).sort((a, b) => b.fecha.localeCompare(a.fecha));
+}
+
+// Todos los precios apuntados (un año largo), para la pantalla "Precios" de la app:
+// [fecha AAAA-MM-DD, proveedor, id producto, producto, precio]. Solo las líneas con su producto.
+function historialPrecios(dias) {
+  const hoja = SpreadsheetApp.getActive().getSheetByName(HOJA_PRECIOS);
+  if (!hoja || hoja.getLastRow() < 2) return [];
+  const limite = fechaISO(new Date(Date.now() - dias * 86400000));
+  const res = [];
+  for (const r of hoja.getRange(2, 1, hoja.getLastRow() - 1, COL_PRECIOS.length).getValues()) {
+    const id = String(r[4]).trim(), f = fechaISO(r[0]), p = numero(r[8]);
+    if (id && p > 0 && f >= limite) res.push([f, String(r[1]), id, String(r[5]), p]);
+  }
+  return res;
 }
 
 /* ---------- Preparación de la hoja ---------- */
