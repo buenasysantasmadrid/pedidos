@@ -64,6 +64,10 @@ function doPost(e) {
     try { return salida({ ok: true, facturas: facturasConPrecios() }); }
     catch (err) { return salida({ ok: false, error: String(err) }); }
   }
+  if (d.accion === 'borradores') {
+    try { return salida(borradores(d)); }
+    catch (err) { return salida({ ok: false, error: String(err) }); }
+  }
   if (d.accion !== 'pedido') return salida({ ok: false, error: 'Acción desconocida' });
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -416,6 +420,47 @@ function leerHistorial(dias) {
     res.push([fecha.toISOString(), f[2], f[3], f[4], Number(f[5]) || 0, f[6], f[7], f[8]]);
   }
   return res;
+}
+
+/* ---------- Pedidos de hoy compartidos entre aparatos (23/11/2026) ----------
+ * Cada aparato manda lo que tiene puesto hoy en cada proveedor (y si está enviado) y recibe lo de
+ * todos. Clave "AAAA-MM-DD|PROVEEDOR|entrega". Gana el cambio más reciente (Actualizado, en ms).
+ * Se guarda en la pestaña APP_Borradores; lo de más de 10 días se borra solo. */
+const HOJA_BORR = 'APP_Borradores';
+const COL_BORR = ['Clave', 'Fecha', 'Proveedor', 'Entrega', 'Datos', 'Actualizado', 'Quién'];
+function borradores(d) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const hoja = hojaOCrear(HOJA_BORR, COL_BORR);
+    const hoy = String(d.hoy || '').slice(0, 10);
+    const n = hoja.getLastRow() - 1;
+    let filas = n > 0 ? hoja.getRange(2, 1, n, COL_BORR.length).getValues() : [];
+    const pos = {};
+    filas.forEach((f, i) => { pos[String(f[0])] = i; });
+    let cambio = false;
+    (d.cambios || []).forEach(c => {
+      const k = String(c.k || ''); if (!hoy || k.slice(0, 10) !== hoy) return;
+      const t = Number(c.t) || 0, p = k.split('|');
+      const fila = [k, hoy, p[1] || '', p[2] || '', String(c.datos || ''), t, String(d.quien || '')];
+      if (pos[k] != null) { if ((Number(filas[pos[k]][5]) || 0) <= t) { filas[pos[k]] = fila; cambio = true; } }
+      else { pos[k] = filas.length; filas.push(fila); cambio = true; }
+    });
+    const lim = new Date(Date.now() - 10 * 86400000);
+    const limISO = Utilities.formatDate(lim, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    const quedan = filas.filter(f => String(f[0]).slice(0, 10) >= limISO);
+    if (cambio || quedan.length !== filas.length) {
+      if (n > 0) hoja.getRange(2, 1, n, COL_BORR.length).clearContent();
+      if (quedan.length) {
+        hoja.getRange(2, 1, quedan.length, 5).setNumberFormat('@');
+        hoja.getRange(2, 1, quedan.length, COL_BORR.length).setValues(quedan);
+      }
+    }
+    return { ok: true, borradores: quedan.filter(f => String(f[0]).slice(0, 10) === hoy)
+      .map(f => ({ k: String(f[0]), t: Number(f[5]) || 0, datos: String(f[4]), quien: String(f[6]) })) };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function hojaOCrear(nombre, columnas) {

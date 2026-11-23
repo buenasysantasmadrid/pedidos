@@ -507,7 +507,53 @@ const color = n => COLORES[Math.max(0, provs().findIndex(p => p.proveedor === n)
 const entregas = p => dias(p.entregas);
 const dk = (n, e) => hoyISO()+'|'+n+'|'+(e||'');
 const draft = (n, e) => drafts[dk(n, e)] || (drafts[dk(n, e)] = {q:{}, enviado:null});
-const save = () => store.set('pp.drafts', drafts);
+/* Lo de hoy se comparte con los demás aparatos por la hoja (pestaña APP_Borradores).
+   snap = lo último que se sabe que está en la hoja; pendientes = claves cambiadas aquí sin subir. */
+let snap = store.get('pp.snap', {});
+let pendientes = new Set(store.get('pp.pend', []));
+const firma = d => JSON.stringify({q:(d && d.q) || {}, otros:(d && d.otros) || {}, enviado:(d && d.enviado) || null});
+const VACIO = firma(null);
+const esHoy = k => k.slice(0,10) === hoyISO();
+let tBorr = null, sincB = false;
+const save = () => {
+  for (const [k, d] of Object.entries(drafts)){
+    if (!esHoy(k)) continue;
+    const f = firma(d);
+    if (d.f === f) continue;                    // sin cambios desde la última vez
+    d.f = f;
+    if (f === (snap[k] ?? VACIO)) continue;     // igual que lo que hay en la hoja
+    d.t = Date.now(); pendientes.add(k);
+  }
+  store.set('pp.drafts', drafts); store.set('pp.pend', [...pendientes]);
+  clearTimeout(tBorr); tBorr = setTimeout(sincBorradores, 700);
+};
+async function sincBorradores(){
+  if (sincB || !conAcceso()) return;
+  sincB = true;
+  try {
+    for (const k of [...pendientes]) if (!esHoy(k)) pendientes.delete(k);
+    const envio = [...pendientes].map(k => ({k, t:(drafts[k] && drafts[k].t) || Date.now(), datos:firma(drafts[k])}));
+    const j = await llamar({accion:'borradores', hoy:hoyISO(), cambios:envio, quien:(acceso && acceso.email) || ''});
+    for (const e of envio) if (drafts[e.k] && firma(drafts[e.k]) === e.datos){ pendientes.delete(e.k); snap[e.k] = e.datos; }
+    let cambio = false;
+    for (const s of j.borradores || []){
+      if (pendientes.has(s.k)) continue;
+      const loc = drafts[s.k];
+      if (loc && firma(loc) === s.datos){ snap[s.k] = s.datos; continue; }
+      let v; try { v = JSON.parse(s.datos); } catch(e){ continue; }
+      drafts[s.k] = {q:v.q || {}, otros:v.otros || {}, enviado:v.enviado || null, t:s.t, f:s.datos};
+      snap[s.k] = s.datos; cambio = true;
+    }
+    for (const k of Object.keys(snap)) if (!esHoy(k)) delete snap[k];
+    store.set('pp.drafts', drafts); store.set('pp.snap', snap); store.set('pp.pend', [...pendientes]);
+    if (cambio && !$('#modal').innerHTML && document.activeElement?.tagName !== 'INPUT'){
+      if (ui.vista === 'inicio') pintarInicio(); else if (ui.vista === 'prov') pintarProv();
+    }
+  } catch(e){ /* sin conexión: se reintenta en el próximo ciclo */ }
+  finally { sincB = false; }
+}
+setInterval(() => { if (document.visibilityState === 'visible') sincBorradores(); }, 12000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && conAcceso()){ sincBorradores(); cargarHistorial(); } });
 // "Otros productos": líneas libres (x1, x2…) para lo que no está en la lista. Texto en d.otros, cantidad en d.q.
 const otros = d => d.otros || (d.otros = {});
 function lineas(n, d){
@@ -588,6 +634,7 @@ async function sincronizar(){
   for (const p of [...cola]){
     try { await llamar(p); cola = cola.filter(x => x.pedido !== p.pedido); store.set('pp.cola', cola); } catch(e){ break; }
   }
+  sincBorradores();    // lo que se está pidiendo hoy en los demás aparatos
   cargarHistorial();   // para calcular las cantidades habituales
 }
 window.addEventListener('online', sincronizar);
@@ -1208,7 +1255,7 @@ function registrar(p){
     const its = lineas(p.proveedor, d).map(x => Object.assign({}, x, {precio: pr[x.id] || ''})); if (!its.length) continue;
     d.enviado = ahora;
     cola.push({accion:'pedido', pedido:p.proveedor.replace(/\W+/g,'').slice(0,12)+'-'+(e||'U')+'-'+Date.now().toString(36), ts:ahora,
-      proveedor:p.proveedor, entrega:e ? DIA[e] : '', dispositivo:'Tablet', items:its});
+      proveedor:p.proveedor, entrega:e ? DIA[e] : '', dispositivo:(acceso && acceso.email) || 'Tablet', items:its});
   }
   save(); store.set('pp.cola', cola); sincronizar();
 }
