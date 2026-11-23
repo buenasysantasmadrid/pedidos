@@ -312,23 +312,27 @@ button:disabled{cursor:default}
 .est-bar{min-width:0}
 .bar .s.falta{opacity:1;color:#ffd9a0;font-weight:700}
 /* Impresión: solo la hoja de pedidos de la semana */
-#print{display:none}
+/* Todo en una hoja A4: 3 columnas; imprimirSemana() baja la letra si no cabe */
+#print{display:none;color:#000;background:#fff;font:8.5pt/1.25 Figtree,Arial,sans-serif;width:194mm;column-count:3;column-gap:5mm;column-rule:.5pt solid #ddd}
+#print.medir{display:block;position:absolute;left:-9999px;top:0}
+#print .pcab{column-span:all;display:flex;align-items:baseline;gap:4mm;border-bottom:1.5pt solid #556b2f;padding-bottom:1.2mm}
+#print h1{margin:0;font:600 1.8em/1.1 "Playfair Display",Georgia,serif;font-style:italic}
+#print .psub{margin:0;color:#444}
+#print section{break-inside:avoid;padding-top:1.6mm}
+#print h2{margin:0;font:600 1.3em "Playfair Display",Georgia,serif;font-style:italic;color:#556b2f;border-bottom:.75pt solid #556b2f}
+#print h3{margin:.7mm 0 .2mm;font-size:.85em;font-weight:600;color:#333}
+#print table{width:100%;border-collapse:collapse}
+#print td{padding:.2mm .8mm;border-bottom:.4pt solid #ddd;vertical-align:top}
+#print .pq{width:6mm;text-align:right;font-weight:700;white-space:nowrap}
+#print .pu{width:11mm;color:#555;font-size:.9em}
+#print .pok{width:3.4mm;padding:.3mm 0 0}
+#print .pok i{display:block;width:2.6mm;height:2.6mm;border:.5pt solid #777}
+#print .ptot{column-span:all;margin:2mm 0 0;border-top:1pt solid #556b2f;padding-top:1mm;font-size:1.05em}
 @media print{
-  @page{margin:12mm}
+  @page{size:A4;margin:8mm}
   body{background:#fff!important}
   body > *:not(#print){display:none!important}
-  #print{display:block;color:#000;font:11pt/1.35 Figtree,Arial,sans-serif}
-  #print h1{margin:0;font:600 22pt/1.1 "Playfair Display",Georgia,serif;font-style:italic}
-  #print .psub{margin:2mm 0 4mm;color:#444}
-  #print section{break-inside:avoid;border-top:1.5pt solid #556b2f;padding-top:2mm;margin-top:5mm}
-  #print h2{margin:0;font:600 15pt "Playfair Display",Georgia,serif;font-style:italic;color:#556b2f}
-  #print h3{margin:2.5mm 0 1mm;font-size:10pt;font-weight:600;color:#333}
-  #print table{width:100%;border-collapse:collapse}
-  #print td{padding:.8mm 1.5mm;border-bottom:.5pt solid #ccc;vertical-align:top}
-  #print .pq{width:12mm;text-align:right;font-weight:700}
-  #print .pu{width:20mm;color:#555}
-  #print .pok{width:10mm;border:.5pt solid #999}
-  #print .ptot{margin-top:6mm;font-size:12pt}
+  #print{display:block!important;position:static}
 }
 
 /* Móvil: letra y botones más pequeños (la tablet no cambia) */
@@ -1030,18 +1034,24 @@ async function imprimirSemana(){
   const pos = n => { const i = orden.indexOf(n); return i < 0 ? 999 : i; };
   const lista = [...peds.values()].sort((x, y) => pos(x.prov) - pos(y.prov) || x.prov.localeCompare(y.prov) || x.f.localeCompare(y.f));
   const dia = d => d.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'});
-  let html = `<h1>Pedidos de la semana</h1><p class="psub">Del ${dia(a)} al ${dia(new Date(b - 86400000))} · ${LOCAL}</p>`;
+  let html = `<div class="pcab"><h1>Pedidos de la semana</h1><p class="psub">Del ${dia(a)} al ${dia(new Date(b - 86400000))} · ${LOCAL}</p></div>`;
   if (!lista.length) html += '<p>No hay pedidos esta semana.</p>';
   let total = 0, prov = null;
   for (const p of lista){
     if (p.prov !== prov){ if (prov) html += '</section>'; prov = p.prov; html += `<section><h2>${esc(bonito(prov))}</h2>`; }
     const t = importe(p.items, pr).t; total += t;
-    html += `<h3>${p.borrador ? 'SIN ENVIAR todavía' : 'Enviado el ' + esc(fechaLarga(p.f)) + ' a las ' + esc(hm(p.f))}${p.ent ? ' · entrega ' + esc(p.ent) : ''}${t ? ' · ≈ ' + eur(t) : ''}</h3>
-      <table>${p.items.map(i => `<tr><td class="pq">${fmtQ(i.cantidad)}</td><td class="pu">${esc(i.unidad || '')}</td><td>${esc(cap(i.producto))}</td><td class="pok"></td></tr>`).join('')}</table>`;
+    html += `<h3>${p.borrador ? 'SIN ENVIAR todavía' : esc(fechaLarga(p.f)) + ' ' + esc(hm(p.f))}${p.ent ? ' · entrega ' + esc(p.ent) : ''}${t ? ' · ≈ ' + eurRedondo(t) : ''}</h3>
+      <table>${p.items.map(i => `<tr><td class="pq">${fmtQ(i.cantidad)}</td><td class="pu">${esc(i.unidad || '')}</td><td>${esc(cap(i.producto))}</td><td class="pok"><i></i></td></tr>`).join('')}</table>`;
   }
   if (prov) html += '</section>';
   if (total) html += `<p class="ptot">Total aproximado de la semana: <b>${eur(total)}</b> sin IVA</p>`;
-  $('#print').innerHTML = html;
+  const el = $('#print');
+  el.innerHTML = html;
+  // Que quepa en una hoja A4 (297 mm menos 16 mm de márgenes): se baja la letra poco a poco
+  el.classList.add('medir');
+  let pt = 8.5; el.style.fontSize = pt + 'pt';
+  while (el.offsetHeight > 280 * 96 / 25.4 && pt > 5.5){ pt -= 0.25; el.style.fontSize = pt + 'pt'; }
+  el.classList.remove('medir');
   setTimeout(() => window.print(), 100);
 }
 
