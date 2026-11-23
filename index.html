@@ -496,6 +496,11 @@ let hoja = cat.proveedores.length ? 'ok' : 'cargando';   // cargando | ok | erro
 let drafts = store.get('pp.drafts', {});
 let cola = store.get('pp.cola', []);
 let ui = {vista:'inicio', prov:null, entrega:'', buscar:'', solo:false};
+// Una sola vez (23/11/2026): lo hecho hasta hoy eran pruebas; se vacía lo guardado en este aparato.
+if (!store.get('pp.reset1', false)){
+  drafts = {}; cola = [];
+  store.set('pp.drafts', {}); store.set('pp.cola', []); store.set('pp.hist', []); store.set('pp.reset1', true);
+}
 
 (function(){ const l = new Date(); l.setDate(l.getDate()-10); const c = l.toISOString().slice(0,10);
   for (const k of Object.keys(drafts)) if (k.slice(0,10) < c) delete drafts[k]; store.set('pp.drafts', drafts); })();
@@ -544,6 +549,9 @@ async function sincBorradores(){
       drafts[s.k] = {q:v.q || {}, otros:v.otros || {}, enviado:v.enviado || null, t:s.t, f:s.datos};
       snap[s.k] = s.datos; cambio = true;
     }
+    // Lo que estaba en la hoja y ya no está (se vació desde la hoja): se quita también aquí
+    const enHoja = new Set((j.borradores || []).map(s => s.k));
+    for (const k of Object.keys(snap)) if (esHoy(k) && !enHoja.has(k) && !pendientes.has(k)){ delete drafts[k]; delete snap[k]; cambio = true; }
     for (const k of Object.keys(snap)) if (!esHoy(k)) delete snap[k];
     store.set('pp.drafts', drafts); store.set('pp.snap', snap); store.set('pp.pend', [...pendientes]);
     if (cambio && !$('#modal').innerHTML && document.activeElement?.tagName !== 'INPUT'){
